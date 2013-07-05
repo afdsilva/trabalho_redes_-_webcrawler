@@ -9,10 +9,14 @@
 #define HTTP_H_
 
 #include <iostream>
+#include <stdlib.h>
 #include <stdio.h>
-#include <string>
+#include <string.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <netdb.h>
+
+using namespace std;
 
 class http {
 private:
