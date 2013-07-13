@@ -12,14 +12,13 @@ using namespace std;
 
 http::http() {
 	// TODO Auto-generated constructor stub
+	//metodos precisam ser completados para não ter problema de "sobrescrita"
 	this->socket_desc = socket(AF_INET , SOCK_STREAM , 0);
 
 }
-
 http::~http() {
-	// TODO Auto-generated destructor stub
-}
 
+}
 bool http::Server(string url, int port ) {
 	return true;
 }
@@ -27,8 +26,9 @@ int main(int argc , char *argv[]) {
 
 	int socket_desc;
 	//int depth;
-	char *message , server_reply[2000];
-	struct hostent *host;
+	char * message;
+	char server_reply[2000];
+	struct hostent * host;
     struct sockaddr_in server;
 	
 	/**
@@ -48,7 +48,7 @@ int main(int argc , char *argv[]) {
     }
     
 	//host = gethostbyname(argv[1]);
-    host = gethostbyname("www.google.com.br");
+    host = gethostbyname("www.cplusplus.com");
     
     memcpy(&server.sin_addr,host->h_addr_list[0],host->h_length);
 	server.sin_family = AF_INET;
@@ -58,9 +58,9 @@ int main(int argc , char *argv[]) {
         cout << "erro de conexao" << endl;
     	return 1;
     }
-    std::cout << "conectado" << std::endl;
 
-    message = "GET / HTTP/1.1\r\n\r\n";
+    message = "GET / HTTP/1.0\r\n\r\n";
+
 
 	if( send(socket_desc , message , strlen(message) , 0) < 0)
 	{
@@ -68,14 +68,47 @@ int main(int argc , char *argv[]) {
 		return 1;
 	}
 	puts("Data Send\n");
-	
+
+	int tam = 0;
 	//Receive a reply from the server
-	if( recv(socket_desc, server_reply , 2000 , 0) < 0)
+	memset(server_reply,0,sizeof(server_reply));
+	char * htmlcontent;
+	int html = 0;
+	string str;
+	while( (tam = recv(socket_desc, server_reply , BUFSIZ, 0)) > 0) {
+		if (html == 0) {
+			htmlcontent = strstr(server_reply, "\r\n\r\n");
+			if(htmlcontent != NULL) {
+				html = 1;
+				htmlcontent += 4;
+			}
+		} else {
+			htmlcontent = server_reply;
+		}
+		if(html) {
+			str += htmlcontent;
+		}
+		str += server_reply;
+
+		memset(server_reply, 0, tam);
+	}
+
+	std::cout << str << std::endl;
+	/** teste para baixar imagem
+	ofstream imagem;
+	imagem.open("/home/andref/Downloads/teste.jpg", ios::out | ios::binary);
+	imagem << str;
+	imagem.close();
+	**/
+	/**
+	if(( tam = recv(socket_desc, server_reply , sizeof(server_reply), MSG_WAITALL)) < 0)
 	{
 		puts("recv failed");
 	}
+	std::cout << "Tamanho: " << tam << std::endl;
 	puts("Reply received\n");
 	puts(server_reply);
-
+	**/
+	//close(socket_desc);
     return 0;
 }

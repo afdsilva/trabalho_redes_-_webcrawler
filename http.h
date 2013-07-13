@@ -15,13 +15,15 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <iostream>
+#include <fstream>
 
 using namespace std;
 
 class http {
 private:
 	int socket_desc;
-	string message;
+	char * http_query;
 	string reply;
 	struct sockaddr_in server;
 
@@ -31,6 +33,12 @@ public:
 
 public:
 	bool Server(string url, int port );
+
+	char * BuildQuery(char * host, char * page);
+	string ReceiveData();
+
+
+
 
 };
 
