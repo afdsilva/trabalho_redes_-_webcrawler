@@ -24,20 +24,22 @@ class http {
 private:
 	int socket_desc;
 	char * http_query;
-	string reply;
+	char reply[BUFSIZ];
 	struct sockaddr_in server;
+	struct hostent * host;
 
 public:
 	http();
+	http(string url, int port);
 	virtual ~http();
 
 public:
-	bool Server(string url, int port );
-
+	bool Server(string url, int port);
+private:
+	struct hostent * ParseUrl(string url);
 	char * BuildQuery(char * host, char * page);
 	string ReceiveData();
-
-
+	bool SendRequest();
 
 
 };
