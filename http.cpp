@@ -1,14 +1,7 @@
-/*
- * http.cpp
- *
- *  Created on: 04/07/2013
- *      Author: andref
- */
-
-using namespace std;
-
-
 #include "http.h"
+#include <ostream>
+#include <fstream>
+using namespace std;
 
 http::http() {
 }
@@ -54,47 +47,69 @@ char * http::BuildQuery(char * host, char * page) {
 	return retorno;
 }
 
+char *build_request(char *host, char *path) {
+    char *request;
+    char request_temp[] = "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n";
+ 
+    request = (char *) malloc(strlen(host) + strlen(path) + strlen(request_temp) - 5);
+    sprintf(request, request_temp, path, host);
+	
+    return request;
+}
+
+void send_request(int socket, char *get) {
+	
+	if(send(socket, get, strlen(get), 0) < 0){
+		cout << "Falha no envio da requisição" << endl;
+		return ;
+	}
+}
+
 int main(int argc , char *argv[]) {
 
 	int socket_desc;
 	//int depth;
-	char * message;
-	char server_reply[BUFSIZ];
-	struct hostent * host;
-    struct sockaddr_in server;
 
+	char *message;
+	struct hostent *host;
+    struct sockaddr_in server;
+	
+	char *host_test = "www.climatempo.com.br";
+	char *path_test = "/";
+	
 	/**
 	if(argc != 3){
 		std::cout << "erro de parametros" << std::endl;
 		return 1;
 	}
+	int depth;
+	depth = atoi(argv[2]);
+	host = gethostbyname(argv[1]);
 	**/
-
-	//depth = atoi(argv[2]);
-
-	socket_desc = socket(AF_INET , SOCK_STREAM , 0);
-
-    if (socket_desc == -1)
-    {
-        printf("Could not create socket");
+	
+    if ((socket_desc = socket(AF_INET , SOCK_STREAM , 0))== -1){
+        cout << "Não criou o socket" << endl;
     }
-
-	//host = gethostbyname(argv[1]);
-    host = gethostbyname("ausentesonline.com.br");
-
+    
+    host = gethostbyname(host_test);
+    
     memcpy(&server.sin_addr,host->h_addr_list[0],host->h_length);
 	server.sin_family = AF_INET;
     server.sin_port = htons(80);
-
+    
     if (connect(socket_desc, ( struct sockaddr *) & server, sizeof(server)) > 0) {
-        cout << "erro de conexao" << endl;
+        cout << "Erro de conexao" << endl;
     	return 1;
     }
-
-    //message = "GET / HTTP/1.1\r\nHost: www.pudim.com.br\r\n\r\n";
-    //http://ausentesonline.com.br/img_turismo_oqueconhecer/03.jpg
-   //message = "GET /index.php HTTP/1.1\r\nHost: ausentesonline.com.br\r\n\r\n";
-   message = "GET /img_turismo_oqueconhecer/03.jpg HTTP/1.1\r\nHost: ausentesonline.com.br\r\n\r\n";
+    /** Algoritmo de Teste de Download, esta baixando imagens perfeitamente, porem tras lixo quando baixa HTML;
+     * necessario testar com outros arquivos, porem se for só html, talvez nao tenha problemas;
+     * Devido a união do meu (Andre) algoritmo e o do Mario, pode ta meio estranho, que ta usando uma parte de
+     * um algoritmo e parte de outro, mas ta funcionando
+     **/
+    /**/
+	char server_reply[BUFSIZ];
+   	//message = "GET /img_turismo_oqueconhecer/03.jpg HTTP/1.1\r\nHost: ausentesonline.com.br\r\n\r\n";
+	message = build_request(host_test, path_test);
 
 	//std::ofstream imagem("/home/andref/Downloads/teste_webcrawler.html", ios::out | ios::binary);
 	std::ofstream imagem("/home/andref/Downloads/teste_webcrawler.jpg", ios::out | ios::binary);
@@ -147,20 +162,22 @@ int main(int argc , char *argv[]) {
 	std::cout << "TotalTam: " << totalTam << std::endl;
 	//std::cout << "Cabecalho: " << std::endl << header << std::endl;
 	//std::cout << "Imagem: " << str.length() << std::endl << str << std::endl;
-	/** teste para baixar imagem **/
 
 	imagem.close();
+
 	//fclose(pFile);
-	/**/
-	/**
+	/** /
 	if(( tam = recv(socket_desc, server_reply , sizeof(server_reply), MSG_WAITALL)) < 0)
 	{
 		puts("recv failed");
 	}
 	std::cout << "Tamanho: " << tam << std::endl;
 	puts(server_reply);
-	**/
-	puts("Reply received\n");
+
 	//close(socket_desc);
-    return 0;
+    
+	//cout << message << endl;
+	//send_request(socket_desc, message);
+	**/
+	return 0;
 }
