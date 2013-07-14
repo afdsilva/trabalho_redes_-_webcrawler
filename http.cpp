@@ -1,14 +1,7 @@
-/*
- * http.cpp
- *
- *  Created on: 04/07/2013
- *      Author: andref
- */
-
-using namespace std;
-
-
 #include "http.h"
+#include <ostream>
+#include <fstream>
+using namespace std;
 
 http::http() {
 	// TODO Auto-generated constructor stub
@@ -23,59 +16,68 @@ http::~http() {
 bool http::Server(string url, int port ) {
 	return true;
 }
+
+char *build_request(char *host, char *path) {
+    char *request;
+    char request_temp[] = "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n";
+ 
+    request = (char *) malloc(strlen(host) + strlen(path) + strlen(request_temp) - 5);
+    sprintf(request, request_temp, path, host);
+	
+    return request;
+}
+
+void send_request(int socket, char *get) {
+	
+	if(send(socket, get, strlen(get), 0) < 0){
+		cout << "Falha no envio da requisição" << endl;
+		return ;
+	}
+}
+
 int main(int argc , char *argv[]) {
 
 	int socket_desc;
-	//int depth;
-	char *message , server_reply[2000];
+	char *message;
 	struct hostent *host;
     struct sockaddr_in server;
+	
+	char *host_test = "www.climatempo.com.br";
+	char *path_test = "/";
 	
 	/**
 	if(argc != 3){
 		std::cout << "erro de parametros" << std::endl;
 		return 1;
 	}
+	int depth;
+	depth = atoi(argv[2]);
+	host = gethostbyname(argv[1]);
 	**/
 	
-	//depth = atoi(argv[2]);
-	
-	socket_desc = socket(AF_INET , SOCK_STREAM , 0);
-
-    if (socket_desc == -1)
-    {
-        printf("Could not create socket");
+    if ((socket_desc = socket(AF_INET , SOCK_STREAM , 0))== -1){
+        cout << "Não criou o socket" << endl;
     }
     
-	//host = gethostbyname(argv[1]);
-    host = gethostbyname("www.google.com.br");
+    host = gethostbyname(host_test);
     
     memcpy(&server.sin_addr,host->h_addr_list[0],host->h_length);
 	server.sin_family = AF_INET;
     server.sin_port = htons(80);
-
+    
     if (connect(socket_desc, ( struct sockaddr *) & server, sizeof(server)) > 0) {
-        cout << "erro de conexao" << endl;
+        cout << "Erro de conexao" << endl;
     	return 1;
     }
-    std::cout << "conectado" << std::endl;
-
-    message = "GET / HTTP/1.1\r\n\r\n";
-
-	if( send(socket_desc , message , strlen(message) , 0) < 0)
-	{
-		puts("Send failed");
-		return 1;
-	}
-	puts("Data Send\n");
+    
+	message = build_request(host_test, path_test);
+	//cout << message << endl;
+	send_request(socket_desc, message); 
 	
-	//Receive a reply from the server
-	if( recv(socket_desc, server_reply , 2000 , 0) < 0)
-	{
-		puts("recv failed");
-	}
-	puts("Reply received\n");
-	puts(server_reply);
-
+	receive_html(socket_desc);
+	
     return 0;
 }
+
+
+

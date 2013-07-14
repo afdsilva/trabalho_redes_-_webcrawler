@@ -1,10 +1,3 @@
-/*
- * http.h
- *
- *  Created on: 04/07/2013
- *      Author: andref
- */
-
 #ifndef HTTP_H_
 #define HTTP_H_
 
@@ -15,13 +8,16 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <iostream>
+#include <fstream>
+
 
 using namespace std;
 
 class http {
-private:
+	
 	int socket_desc;
-	string message;
+	char * http_query;
 	string reply;
 	struct sockaddr_in server;
 
@@ -31,6 +27,9 @@ public:
 
 public:
 	bool Server(string url, int port );
+
+	char * BuildQuery(char * host, char * page);
+	string ReceiveData();
 
 };
 
