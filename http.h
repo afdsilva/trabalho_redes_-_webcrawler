@@ -13,6 +13,11 @@
 #include <iostream>
 #include <fstream>
 #include <boost/regex.hpp>  // BIBLIOTECA PARA PARSEAR O HTML
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <pwd.h>
+
 #define PORT 80		// PORTA PADRAO HTTP
 
 using namespace std;

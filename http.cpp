@@ -108,7 +108,7 @@ char *build_request(char *host, char *path) {
     char *request;
     char request_temp[] = "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n";
  
-    request = (char *) malloc(strlen(host) + strlen(path) + strlen(request_temp) - 5);
+    request = (char *) malloc(strlen(host) + strlen(path) + strlen(request_temp));
     sprintf(request, request_temp, path, host);
 
     return request;
@@ -207,6 +207,32 @@ void receive_data(int *socket, char *host, char *path){
 	saida.close();
 }
 
+void create_dir(char *host, char *path){
+	int status;
+	
+	// Pega o diretorio padrao do user
+	struct passwd *pw = getpwuid(getuid());
+	char *homedir = pw->pw_dir;
+	
+	string diretorio;
+	string host_dir = host;
+	string path_dir = path;
+	
+	// /home/user
+	diretorio += homedir;
+
+	// /home/user/
+	diretorio += "/";
+	
+	// /home/user/host/path
+	diretorio = diretorio + host_dir + path_dir;
+	cout << diretorio << endl;
+	if((status = mkdir(diretorio.c_str(), 0777)) < 0){
+		cout << "Erro ao criar o diretorio" << endl;
+		return;
+	}
+}
+
 int main(int argc , char *argv[]) {
 
 	int socket_desc;
@@ -224,7 +250,7 @@ int main(int argc , char *argv[]) {
 	host = gethostbyname(argv[1]);
 	**/
 
-	
+	create_dir(host_test, path_test); 
 	socket_desc = create_socket();
 	socket_address(&server, host_test);
 	socket_connect(&socket_desc, &server); 
