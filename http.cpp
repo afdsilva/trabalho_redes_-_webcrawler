@@ -145,6 +145,7 @@ void receive_data(int *socket, char *host, char *path){
 	int totalTam2 = 0;
 	unsigned int ponteiro = 0;
 	
+	/** Resposta do receive http **/
 	string resposta;
 	resposta.clear();
 	
@@ -181,25 +182,22 @@ void receive_data(int *socket, char *host, char *path){
 	std::cout << "TotalTam: " << totalTam << std::endl;
 	//std::cout << "Cabecalho: " << std::endl << header << std::endl;
 	//std::cout << "Imagem: " << str.length() << std::endl << str << std::endl;
-	
-	//for(int i = 1; i < 2; ++i)
-   //{
 	 
 	/** Printando a resposta que acumulou do recv
-	 * para confirmar que pegou todo conteudo da resposta do http
+	 *  para confirmar que pegou todo conteudo da resposta do http
 	* */ 
 	cout << resposta;
 	
 	boost::regex e("<\\s*A\\s+[^>]*href\\s*=\\s*\"([^\"]*)\"|<img.+?src=[\"'](.+?)[\"'].+?>",   
                boost::regbase::normal | boost::regbase::icase);
 	   
-	// acumulando os links parcialmente
+	// lista de string acumulando os links parcialmente
 	// depois colocar nos atributos da classe de urlVisited...
 	list<string> l; 
       
 	cout << "URL's encontradas " << ":" << endl;
 	regex_split(back_inserter(l), resposta, e);
-      
+     
 	while(l.size()){
 		resposta = *(l.begin());
 		l.pop_front();
