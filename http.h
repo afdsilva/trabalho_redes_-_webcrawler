@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <stdlib.h>
+#include <string>
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -11,8 +12,8 @@
 #include <netdb.h>
 #include <iostream>
 #include <fstream>
-
-#define PORT 80
+#include <boost/regex.hpp>  // BIBLIOTECA PARA PARSEAR O HTML
+#define PORT 80		// PORTA PADRAO HTTP
 
 using namespace std;
 

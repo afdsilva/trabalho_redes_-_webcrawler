@@ -1,6 +1,5 @@
 #include "http.h"
-#include <ostream>
-#include <fstream>
+
 using namespace std;
 
 http::http() {
@@ -117,7 +116,7 @@ char *build_request(char *host, char *path) {
 
 // ENVIA A REQUISIÇÃO
 void send_request(int *socket, char *get) {
-	cout << get << endl;
+	
 	if(send(*socket, get, strlen(get), 0) < 0){
 		cout << "Falha no envio da requisição" << endl;
 		return ;
@@ -146,8 +145,12 @@ void receive_data(int *socket, char *host, char *path){
 	int totalTam2 = 0;
 	unsigned int ponteiro = 0;
 	
+	string resposta;
+	resposta.clear();
+	
 	//Receive a reply from the server
 	while( (tam = recv(*socket, server_reply ,BUFSIZ, 0)) > 0) {
+		resposta += server_reply;
 		totalTam = totalTam + tam;
 		//std::cout << "Tamanho: " << tam << std::endl;
 		if (header == 0) {
@@ -168,16 +171,41 @@ void receive_data(int *socket, char *host, char *path){
 		//std::cout << "content: " << strlen(content) << std::endl;;
 		//printf("Ponteiros: server_reply: %p content: %p \n",server_reply, content);
 		//fwrite(content,tam,1,pFile);
-		std::cout << content << std::endl;
+		//std::cout << content << std::endl;
 		saida.write(content,tam-ponteiro);
 
 		memset(server_reply,0,tam);
 		totalTam2 = totalTam2 + tam;
 	}
+	
 	std::cout << "TotalTam: " << totalTam << std::endl;
 	//std::cout << "Cabecalho: " << std::endl << header << std::endl;
 	//std::cout << "Imagem: " << str.length() << std::endl << str << std::endl;
-
+	
+	//for(int i = 1; i < 2; ++i)
+   //{
+	 
+	/** Printando a resposta que acumulou do recv
+	 * para confirmar que pegou todo conteudo da resposta do http
+	* */ 
+	cout << resposta;
+	
+	boost::regex e("<\\s*A\\s+[^>]*href\\s*=\\s*\"([^\"]*)\"|<img.+?src=[\"'](.+?)[\"'].+?>",   
+               boost::regbase::normal | boost::regbase::icase);
+	   
+	// acumulando os links parcialmente
+	// depois colocar nos atributos da classe de urlVisited...
+	list<string> l; 
+      
+	cout << "URL's encontradas " << ":" << endl;
+	regex_split(back_inserter(l), resposta, e);
+      
+	while(l.size()){
+		resposta = *(l.begin());
+		l.pop_front();
+		cout << resposta << endl;
+	}
+	
 	saida.close();
 }
 
@@ -203,10 +231,10 @@ int main(int argc , char *argv[]) {
 	socket_address(&server, host_test);
 	socket_connect(&socket_desc, &server); 
     receive_data(&socket_desc, host_test, path_test);
-    
+  
     if((shutdown(socket_desc, 2)) < 0){
 		cout << "Erro ao fechar o socket" << endl;
 	}
-    
+
 	return 0;
 }
