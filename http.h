@@ -12,6 +12,8 @@
 #include <iostream>
 #include <fstream>
 
+#define PORT 80
+
 using namespace std;
 
 class http {
