@@ -74,8 +74,6 @@ int main(int argc , char *argv[]) {
 	//cout << message << endl;
 	send_request(socket_desc, message); 
 	
-	receive_html(socket_desc);
-	
     return 0;
 }
 
