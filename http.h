@@ -1,36 +1,46 @@
-/*
- * http.h
- *
- *  Created on: 04/07/2013
- *      Author: andref
- */
-
 #ifndef HTTP_H_
 #define HTTP_H_
 
 #include <iostream>
+#include <vector>
 #include <stdlib.h>
+#include <string>
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <iostream>
+#include <fstream>
+#include <boost/regex.hpp>  // BIBLIOTECA PARA PARSEAR O HTML
+#include <boost/algorithm/string/regex.hpp>
+
+#define PORT 80		// PORTA PADRAO HTTP
 
 using namespace std;
 
 class http {
 private:
+	static std::vector<string> urlVisited;
+	static std::vector<string> urlUnVisited;
 	int socket_desc;
-	string message;
-	string reply;
+	char * http_query;
+	char reply[BUFSIZ];
 	struct sockaddr_in server;
+	struct hostent * host;
 
 public:
 	http();
+	http(string url, int port);
 	virtual ~http();
 
 public:
-	bool Server(string url, int port );
+	bool Server(string url, int port);
+private:
+	struct hostent * ParseUrl(string url);
+	char * BuildQuery(char * host, char * page);
+	string ReceiveData();
+	bool SendRequest();
 
 };
 
