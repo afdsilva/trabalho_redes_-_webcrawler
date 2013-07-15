@@ -4,7 +4,7 @@ using namespace std;
 
 static std::vector<string> lista_urls;
 static std::vector<string> lista_urls_visitadas;
-
+static string fullpath;
 http::http() {
 }
 http::http(string url, int port) {
@@ -145,8 +145,7 @@ std::vector<string> receive_data(int *socket, char *host, char *path){
 	boost::split_regex(str_split, url,boost::regex("/"));
 	string filename = str_split[str_split.size()-1] == "" ? "index.html" : str_split[str_split.size()-1];
 	std::cout << "filename: " <<filename << std::endl;
-
-	string fullpath = "/home/andref/teste_webcrawler/";
+	fullpath += "/";
 	fullpath += filename;
 	//std::cout << fullpath << std::endl;
 	std::ofstream saida(fullpath.c_str(), ios::out);
@@ -233,6 +232,34 @@ std::vector<string> receive_data(int *socket, char *host, char *path){
 	return retorno;
 }
 
+void create_dir(char *host, char *path){
+	int status;
+
+	// Pega o diretorio padrao do user
+	struct passwd *pw = getpwuid(getuid());
+	char *homedir = pw->pw_dir;
+
+	string diretorio;
+	string host_dir = host;
+	string path_dir = path;
+
+	// /home/user
+	diretorio += homedir;
+
+	// /home/user/
+	diretorio += "/";
+
+	// /home/user/host/path
+	diretorio = diretorio + host_dir + path_dir;
+	fullpath = diretorio;
+	cout << diretorio << endl;
+
+	if((status = mkdir(diretorio.c_str(), 0777)) < 0){
+		cout << "Erro ao criar o diretorio" << endl;
+		return;
+	}
+}
+
 void FazTudo(string url, int depth) {
 
 	if (depth >= 0) {
@@ -266,7 +293,7 @@ void FazTudo(string url, int depth) {
 		//wp-content/uploads/2013/03/intranet-corporativa-200x200.jpg
 		//intranet-corporativa-200x200.jpg
 
-		create_dir(host_test, path_test); 
+		create_dir(host_test, path_test);
 		socket_desc = create_socket();
 		socket_address(&server, host_test);
 		if ((int)server.sin_addr.s_addr == -1)
@@ -300,36 +327,10 @@ void FazTudo(string url, int depth) {
 	}
 }
 
-void create_dir(char *host, char *path){
-	int status;
-	
-	// Pega o diretorio padrao do user
-	struct passwd *pw = getpwuid(getuid());
-	char *homedir = pw->pw_dir;
-	
-	string diretorio;
-	string host_dir = host;
-	string path_dir = path;
-	
-	// /home/user
-	diretorio += homedir;
-
-	// /home/user/
-	diretorio += "/";
-	
-	// /home/user/host/path
-	diretorio = diretorio + host_dir + path_dir;
-	cout << diretorio << endl;
-	if((status = mkdir(diretorio.c_str(), 0777)) < 0){
-		cout << "Erro ao criar o diretorio" << endl;
-		return;
-	}
-}
-
 int main(int argc , char *argv[]) {
 
     //FazTudo("http://www.ausentesonline.com.br/imagem.php?src=img_turismo_oqueconhecer/museu_02.jpg",2);
-    FazTudo("http://www.climatempo.com.br/",2);
+    FazTudo("http://www.peliculasimportadas.com.br/",2);
 
 	return 0;
 }

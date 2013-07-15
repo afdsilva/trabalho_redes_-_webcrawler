@@ -13,14 +13,11 @@
 #include <iostream>
 #include <fstream>
 #include <boost/regex.hpp>  // BIBLIOTECA PARA PARSEAR O HTML
-<<<<<<< HEAD
 #include <boost/algorithm/string/regex.hpp>
-=======
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <pwd.h>
->>>>>>> 6eb8b1216b9786f11b3e7b286d0601b1299873b9
 
 #define PORT 80		// PORTA PADRAO HTTP
 
