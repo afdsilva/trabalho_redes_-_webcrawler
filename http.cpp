@@ -5,6 +5,7 @@ using namespace std;
 static std::vector<string> lista_urls;
 static std::vector<string> lista_urls_visitadas;
 static string fullpath;
+
 http::http() {
 }
 http::http(string url, int port) {
@@ -139,8 +140,10 @@ std::vector<string> receive_data(int *socket, char *host, char *path){
 	message = build_request(host, path);
 
 	//std::ofstream imagem("/home/andref/Downloads/teste_webcrawler.html", ios::out | ios::binary);
+	/** fullpath eh setado no create_dir()
 	string url = path;
 	vector<string> str_split;
+
 
 	boost::split_regex(str_split, url,boost::regex("/"));
 	string filename = str_split[str_split.size()-1] == "" ? "index.html" : str_split[str_split.size()-1];
@@ -148,6 +151,7 @@ std::vector<string> receive_data(int *socket, char *host, char *path){
 	fullpath += "/";
 	fullpath += filename;
 	//std::cout << fullpath << std::endl;
+	**/
 	std::ofstream saida(fullpath.c_str(), ios::out);
 
 	send_request(socket, message);
@@ -210,7 +214,8 @@ std::vector<string> receive_data(int *socket, char *host, char *path){
 
 	if (headerStr.find("text/html") != std::string::npos) {
 
-		boost::regex e("<\\s*A\\s+[^>]*href\\s*=\\s*\"([^\"]*)\"|<img.+?src=[\"'](.+?)[\"'].+?>",
+		//boost::regex e("<\\s*A\\s+[^>]*href\\s*=\\s*\"([^\"]*)\"|<img.+?src=[\"'](.+?)[\"'].+?>",
+		boost::regex e("<\\s*A\\s+[^>]*href\\s*=\\s*\"([^\"]*)\"",
 				   boost::regbase::normal | boost::regbase::icase);
 
 		// lista de string acumulando os links parcialmente
@@ -245,19 +250,48 @@ void create_dir(char *host, char *path){
 
 	// /home/user
 	diretorio += homedir;
-
 	// /home/user/
 	diretorio += "/";
+	diretorio += host_dir;
+	diretorio += "/";
 
-	// /home/user/host/path
-	diretorio = diretorio + host_dir + path_dir;
-	fullpath = diretorio;
-	cout << diretorio << endl;
-
-	if((status = mkdir(diretorio.c_str(), 0777)) < 0){
-		cout << "Erro ao criar o diretorio" << endl;
-		return;
+	struct stat fileStat;
+	if (stat(diretorio.c_str(),&fileStat) < 0) {
+		if((status = mkdir(diretorio.c_str(), 0777)) < 0){
+			cout << "Erro ao criar o diretorio " << diretorio << endl;
+		}
 	}
+
+	//cria os diretorios recursivamentes, a partir do host_dir
+	vector<string> str_split;
+
+	string extensao = "";
+	string temp;
+	boost::split_regex(str_split, path_dir,boost::regex("/"));
+
+	for (int i = 0; i < (int)str_split.size(); i++) {
+		cout << str_split[i] << endl;
+		if (!str_split[i].empty()) {
+			if (str_split[i].find("?") != std::string::npos || !extensao.empty()) {
+				if (!extensao.empty())
+					temp += "_";
+				extensao = ".html";
+				temp += str_split[i];
+			} else {
+				temp += str_split[i];
+				if (stat(temp.c_str(),&fileStat) < 0) {
+					cout << "temp: " << temp << endl;
+					if((status = mkdir(temp.c_str(), 0777)) < 0){
+						cout << "Erro ao criar o diretorio " << temp << endl;
+					}
+				}
+			}
+		}
+	}
+	fullpath = diretorio;
+	fullpath += temp;
+	fullpath += extensao;
+	cout << "Saida: " << fullpath << endl;
 }
 
 void FazTudo(string url, int depth) {
@@ -278,6 +312,11 @@ void FazTudo(string url, int depth) {
 				if (i < (int)str_split.size() - 1)
 					path += "/";
 			}
+		} else {
+			domain = str_split[0];
+		}
+		if (domain.find("www") != std::string::npos) {
+			domain.replace(domain.begin(),domain.begin()+4,"");
 		}
 		//cout << "domain: " << domain << endl;
 		//cout << "path: " << path << endl;
@@ -330,7 +369,7 @@ void FazTudo(string url, int depth) {
 int main(int argc , char *argv[]) {
 
     //FazTudo("http://www.ausentesonline.com.br/imagem.php?src=img_turismo_oqueconhecer/museu_02.jpg",2);
-    FazTudo("http://www.peliculasimportadas.com.br/",2);
+    FazTudo("http://www.peliculasimportadas.com.br",2);
 
 	return 0;
 }
