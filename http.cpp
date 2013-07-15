@@ -2,6 +2,9 @@
 
 using namespace std;
 
+static std::vector<string> lista_urls;
+static std::vector<string> lista_urls_visitadas;
+
 http::http() {
 }
 http::http(string url, int port) {
@@ -73,7 +76,7 @@ char *get_ip (char *domain){
 	
 	if(host == NULL){
 		cout << "Erro gethostbyname" << endl;
-		exit(1);
+		return NULL;
 	}
 	
 	host_ip = inet_ntoa(*(struct in_addr *)host->h_addr_list[0]);
@@ -85,7 +88,10 @@ char *get_ip (char *domain){
 void socket_address(struct sockaddr_in *server, char *host){
 	char *host_ip;
 	host_ip = get_ip(host);
-
+	if (host_ip == NULL) {
+		server->sin_addr.s_addr = -1;
+		return;
+	}
 	server->sin_family = AF_INET;
     server->sin_port = htons(PORT);
     server->sin_addr.s_addr = inet_addr(host_ip);
@@ -124,7 +130,8 @@ void send_request(int *socket, char *get) {
 }
 
 // RECEBE OS DADOS
-void receive_data(int *socket, char *host, char *path){
+std::vector<string> receive_data(int *socket, char *host, char *path){
+	std::vector<string> retorno;
 	char server_reply[BUFSIZ];
    	char *message;
    	
@@ -132,7 +139,17 @@ void receive_data(int *socket, char *host, char *path){
 	message = build_request(host, path);
 
 	//std::ofstream imagem("/home/andref/Downloads/teste_webcrawler.html", ios::out | ios::binary);
-	std::ofstream saida("/home/mario/teste_webcrawler", ios::out);
+	string url = path;
+	vector<string> str_split;
+
+	boost::split_regex(str_split, url,boost::regex("/"));
+	string filename = str_split[str_split.size()-1] == "" ? "index.html" : str_split[str_split.size()-1];
+	std::cout << "filename: " <<filename << std::endl;
+
+	string fullpath = "/home/andref/teste_webcrawler/";
+	fullpath += filename;
+	//std::cout << fullpath << std::endl;
+	std::ofstream saida(fullpath.c_str(), ios::out);
 
 	send_request(socket, message);
 	
@@ -179,32 +196,108 @@ void receive_data(int *socket, char *host, char *path){
 		totalTam2 = totalTam2 + tam;
 	}
 	
-	std::cout << "TotalTam: " << totalTam << std::endl;
+	//std::cout << "TotalTam: " << totalTam << std::endl;
 	//std::cout << "Cabecalho: " << std::endl << header << std::endl;
 	//std::cout << "Imagem: " << str.length() << std::endl << str << std::endl;
 	 
 	/** Printando a resposta que acumulou do recv
 	 *  para confirmar que pegou todo conteudo da resposta do http
 	* */ 
-	cout << resposta;
-	
-	boost::regex e("<\\s*A\\s+[^>]*href\\s*=\\s*\"([^\"]*)\"|<img.+?src=[\"'](.+?)[\"'].+?>",   
-               boost::regbase::normal | boost::regbase::icase);
-	   
-	// lista de string acumulando os links parcialmente
-	// depois colocar nos atributos da classe de urlVisited...
-	list<string> l; 
-      
-	cout << "URL's encontradas " << ":" << endl;
-	regex_split(back_inserter(l), resposta, e);
-     
-	while(l.size()){
-		resposta = *(l.begin());
-		l.pop_front();
-		cout << resposta << endl;
+	//cout << resposta;
+	size_t pos = resposta.find("\r\n\r\n");
+	string headerStr( resposta.begin(), resposta.begin()+pos );
+
+
+
+	if (headerStr.find("text/html") != std::string::npos) {
+
+		boost::regex e("<\\s*A\\s+[^>]*href\\s*=\\s*\"([^\"]*)\"|<img.+?src=[\"'](.+?)[\"'].+?>",
+				   boost::regbase::normal | boost::regbase::icase);
+
+		// lista de string acumulando os links parcialmente
+		// depois colocar nos atributos da classe de urlVisited...
+		list<string> l;
+
+		//cout << "URL's encontradas " << ":" << endl;
+		regex_split(back_inserter(l), resposta, e);
+
+		while(l.size()){
+			resposta = *(l.begin());
+			l.pop_front();
+			//cout << resposta << endl;
+			if (!resposta.empty())
+				retorno.push_back(resposta);
+		}
 	}
-	
 	saida.close();
+	return retorno;
+}
+
+void FazTudo(string url, int depth) {
+
+	if (depth >= 0) {
+		//std::cout << "URL:" << url << std::endl;
+		//boost::regex expr("^(?:http://)?([^/]+)(?:/?.*/?)/(.*)$");
+		vector<string> str_split;
+
+		boost::split_regex(str_split, url,boost::regex("/"));
+		string domain;
+		string path = "/";
+		string file = str_split[str_split.size()-1];
+		if (str_split[0].find("http") != std::string::npos) {
+			domain = str_split[2];
+			for (int i = 3; i < (int)str_split.size();i++) {
+				path += str_split[i];
+				if (i < (int)str_split.size() - 1)
+					path += "/";
+			}
+		}
+		//cout << "domain: " << domain << endl;
+		//cout << "path: " << path << endl;
+		//cout << "file: " << file << endl;
+		char * host_test = (char *)domain.c_str();
+		char * path_test = (char *)path.c_str();
+
+		int socket_desc;
+		struct sockaddr_in server;
+
+		//http:///wp-content/uploads/2013/03/intranet-corporativa-200x200.jpg
+		//digitaisdomarketing.com.br
+		//wp-content/uploads/2013/03/intranet-corporativa-200x200.jpg
+		//intranet-corporativa-200x200.jpg
+
+		create_dir(host_test, path_test); 
+		socket_desc = create_socket();
+		socket_address(&server, host_test);
+		if ((int)server.sin_addr.s_addr == -1)
+			return;
+
+		socket_connect(&socket_desc, &server);
+
+		std::vector<string> lista = receive_data(&socket_desc, host_test, path_test);
+		std::string new_url;
+		bool existe = false;
+		for (int i=0; i < (int) lista.size();i++) {
+			new_url = lista[i];
+			cout << new_url << endl;
+			existe = false;
+			for (int i = 0; i < (int) lista_urls_visitadas.size();i++) {
+				if (lista_urls_visitadas[i] == new_url) {
+					std::cout << "URL jah existe na lista:" << new_url << std::endl;
+					existe = true;
+				}
+			}
+			if (!existe) {
+				lista_urls_visitadas.push_back(new_url);
+				std::cout << "Profundidade:" << depth << std::endl;
+				FazTudo(new_url,depth-1);
+			}
+		}
+
+	    if((shutdown(socket_desc, 2)) < 0){
+			cout << "Erro ao fechar o socket" << endl;
+		}
+	}
 }
 
 void create_dir(char *host, char *path){
@@ -235,30 +328,8 @@ void create_dir(char *host, char *path){
 
 int main(int argc , char *argv[]) {
 
-	int socket_desc;
-    struct sockaddr_in server;
-	char *host_test = "www.climatempo.com.br";
-	char *path_test = "/";
-	
-	/**
-	if(argc != 3){
-		std::cout << "erro de parametros" << std::endl;
-		return 1;
-	}
-	int depth;
-	depth = atoi(argv[2]);
-	host = gethostbyname(argv[1]);
-	**/
-
-	create_dir(host_test, path_test); 
-	socket_desc = create_socket();
-	socket_address(&server, host_test);
-	socket_connect(&socket_desc, &server); 
-    receive_data(&socket_desc, host_test, path_test);
-  
-    if((shutdown(socket_desc, 2)) < 0){
-		cout << "Erro ao fechar o socket" << endl;
-	}
+    //FazTudo("http://www.ausentesonline.com.br/imagem.php?src=img_turismo_oqueconhecer/museu_02.jpg",2);
+    FazTudo("http://www.climatempo.com.br/",2);
 
 	return 0;
 }
