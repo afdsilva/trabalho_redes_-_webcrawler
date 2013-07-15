@@ -266,6 +266,7 @@ void FazTudo(string url, int depth) {
 		//wp-content/uploads/2013/03/intranet-corporativa-200x200.jpg
 		//intranet-corporativa-200x200.jpg
 
+		create_dir(host_test, path_test); 
 		socket_desc = create_socket();
 		socket_address(&server, host_test);
 		if ((int)server.sin_addr.s_addr == -1)
@@ -299,6 +300,31 @@ void FazTudo(string url, int depth) {
 	}
 }
 
+void create_dir(char *host, char *path){
+	int status;
+	
+	// Pega o diretorio padrao do user
+	struct passwd *pw = getpwuid(getuid());
+	char *homedir = pw->pw_dir;
+	
+	string diretorio;
+	string host_dir = host;
+	string path_dir = path;
+	
+	// /home/user
+	diretorio += homedir;
+
+	// /home/user/
+	diretorio += "/";
+	
+	// /home/user/host/path
+	diretorio = diretorio + host_dir + path_dir;
+	cout << diretorio << endl;
+	if((status = mkdir(diretorio.c_str(), 0777)) < 0){
+		cout << "Erro ao criar o diretorio" << endl;
+		return;
+	}
+}
 
 int main(int argc , char *argv[]) {
 
