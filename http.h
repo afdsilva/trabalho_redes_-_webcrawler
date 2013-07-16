@@ -20,32 +20,49 @@
 #include <pwd.h>
 #include <sys/time.h>
 
+#include "Thread.h"
+
 #define PORT 80		// PORTA PADRAO HTTP
 
 using namespace std;
 
-class http {
+class http : public Thread {
 private:
-	static std::vector<string> urlVisited;
-	static std::vector<string> urlUnVisited;
+	static std::vector<Thread> threads;
+
+	string url;
+	int depth;
+	string domain;
+	string path;
+	string file;
+	string filename;
+
 	int socket_desc;
+
 	char * http_query;
-	char reply[BUFSIZ];
 	struct sockaddr_in server;
 	struct hostent * host;
 
-public:
-	http();
-	http(string url, int port);
-	virtual ~http();
+	Lock * _lck;
 
 public:
-	bool Server(string url, int port);
+	http(string url,int depth);
+	void run();
+
+	virtual ~http();
+
+	static std::vector<string> urlVisited;
+	static std::vector<string> urlUnVisited;
+
+public:
+	int Server();
+	std::vector<string> GetUrlList();
 private:
-	struct hostent * ParseUrl(string url);
-	char * BuildQuery(char * host, char * page);
-	string ReceiveData();
-	bool SendRequest();
+	int ParseUrl();
+	int CreateDir();
+	int BuildQuery();
+	int SendRequest();
+	int ReceiveData();
 
 };
 
