@@ -418,12 +418,41 @@ std::vector<string> receive_data(int *socket, char *host, char *path){
 		
 		boost::regex invalid("mailto:|javascript:");
 		
+		string temp;
+		vector<string> aux;
+		string nPath = path;
 		while(l.size()){
+			aux.clear();
+			temp.clear();
 			resposta = *(l.begin());
 			l.pop_front();
 			// Teste para verificar se no <a href> contem mailto: ou javascript:
 			if(!(boost::regex_search(resposta, invalid))){
 				if (!resposta.empty()){
+					boost::regex absoluto("http|https");
+					if(!(boost::regex_search(resposta, absoluto))){
+						temp += "http://";
+						//cout <<"temp 1 " << temp << endl;
+						temp += host;
+						//cout <<"temp 2 " << temp << endl;
+						
+						boost::regex arquivo(".*");
+						if (boost::regex_search(path, arquivo)) {
+							boost::split_regex(aux, nPath, boost::regex("/"));
+							for(int i = 0; i < (int)aux.size()-1; i++){
+								temp += aux[i];
+								if(i < (int)aux.size()-1){
+									temp += "/";
+								}
+							}
+						}
+						else{
+							temp += path;
+						}
+						//cout <<"temp 3 " << temp << endl;
+						resposta = temp + resposta;
+					}
+					//cout <<"resposta " << resposta << endl;
 					retorno.push_back(resposta);
 				}
 			}
@@ -616,7 +645,14 @@ int main(int argc , char *argv[]) {
 		return 0;
 	}
 	
-	url = argv[1];
+	// Inserindo http, caso seja informada uma url sem http
+	boost::regex teste("http|https");
+	if(!(boost::regex_search(argv[1], teste))){
+		url += "http://";
+	}
+	
+	url += argv[1];
+	cout << url << endl;
 	depth = atoi (argv[2]);
 
     //FazTudo("http://www.ausentesonline.com.br/imagem.php?src=img_turismo_oqueconhecer/museu_02.jpg",2);
