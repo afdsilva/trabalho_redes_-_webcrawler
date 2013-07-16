@@ -239,6 +239,7 @@ int http::ReceiveData() {
 static std::vector<string> lista_urls;
 static std::vector<string> lista_urls_visitadas;
 static string fullpath;
+static string host_atual, path_atual;
 
 // CRIA O SOCKET 
 int create_socket(){
@@ -333,13 +334,13 @@ std::vector<string> receive_data(int *socket, char *host, char *path){
 
 	boost::split_regex(str_split, fullpath,boost::regex("/"));
 	string filename = str_split[str_split.size()-1] == "" ? "index.html" : str_split[str_split.size()-1];
-	std::cout << "filename: " <<filename << std::endl;
-	fullpath += "/";
-	fullpath += filename;
+	//std::cout << "filename: " <<filename << std::endl;
+	//fullpath += "/";
+	//fullpath += filename;
 	//cout << "fullpath " << fullpath << endl;
 	std::ofstream saida(fullpath.c_str(), ios::out);
 	send_request(socket, message);
-	
+
 	int tam = 0;
 	memset(server_reply,0,sizeof(server_reply));
 	int header = 0;
@@ -352,17 +353,17 @@ std::vector<string> receive_data(int *socket, char *host, char *path){
 	/** Resposta do receive http **/
 	string resposta;
 	resposta.clear();
-	
-	struct timeval tv; /* timeval and timeout stuff added by davekw7x */
+	/**
+	struct timeval tv;
 	int timeouts = 0;
 	tv.tv_sec = 3;
 	tv.tv_usec = 0;
 	if (setsockopt(*socket, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv,  sizeof tv)){
 	  perror("setsockopt");
 	}
-	
+	**/
 	//Receive a reply from the server
-	while((tam = recv(*socket, server_reply ,BUFSIZ, 0)) > 0  && (++timeouts < 10000)) {
+	while((tam = recv(*socket, server_reply ,BUFSIZ, 0)) > 0) {
 		resposta += server_reply;
 		totalTam = totalTam + tam;
 		//std::cout << "Tamanho: " << tam << std::endl;
@@ -403,7 +404,7 @@ std::vector<string> receive_data(int *socket, char *host, char *path){
 	string headerStr( resposta.begin(), resposta.begin()+pos );
 	std::size_t found = headerStr.find("text/html");
 	if (found != std::string::npos) {
-
+		
 		//boost::regex e("<\\s*A\\s+[^>]*href\\s*=\\s*\"([^\"]*)\"|<img.+?src=[\"'](.+?)[\"'].+?>",
 		boost::regex e("<\\s*A\\s+[^>]*href\\s*=\\s*\"([^\"]*)\"",
 				   boost::regbase::normal | boost::regbase::icase);
@@ -454,6 +455,7 @@ void create_dir(char *host, char *path){
 		if((status = mkdir(diretorio.c_str(), 0777)) < 0){
 			cout << "Erro ao criar o diretorio " << diretorio << endl;
 		}
+		
 	}
 	diretorio += host_dir;
 	diretorio += "/";
@@ -462,7 +464,7 @@ void create_dir(char *host, char *path){
 	if(boost::regex_search(path, test)){
 		diretorio += "/";
 	}**/
-
+	
 	if (stat(diretorio.c_str(),&fileStat) < 0) {
 		if((status = mkdir(diretorio.c_str(), 0777)) < 0){
 			cout << "Erro ao criar o diretorio " << diretorio << endl;
@@ -475,11 +477,11 @@ void create_dir(char *host, char *path){
 	string extensao = "";
 	string temp;
 	boost::split_regex(str_split, path_dir,boost::regex("/"));
-	
 	temp.clear();
 	temp += diretorio;
+	
 	for (int i = 0; i < (int)str_split.size(); i++) {
-		cout << str_split[i] << endl;
+		//cout << str_split[i] << endl;
 		if (!str_split[i].empty()) {
 			std::size_t found = str_split[i].find("?");
 			if (found != std::string::npos || !extensao.empty()) {
@@ -495,10 +497,15 @@ void create_dir(char *host, char *path){
 					temp += str_split[i] + "/";
 				}
 				if (stat(temp.c_str(),&fileStat) < 0) {
-					cout << "temp: " << temp << endl;
+					//cout << "temp: " << temp << endl;
+					//if(temp[temp.size()-1] == '/'){
+					//	temp[temp.size()-1] = '\0';
+					//}
+					//cout <<"TEMP " << temp << endl;
 					if((status = mkdir(temp.c_str(), 0777)) < 0){
 						cout << "Erro ao criar o diretorio " << temp << endl;
 					}
+					chmod(temp.c_str(), 0777);
 				}
 			}
 		}
@@ -508,7 +515,6 @@ void create_dir(char *host, char *path){
 	fullpath += temp;
 	fullpath += str_split[str_split.size()-1];
 	fullpath += extensao;
-	//cout << "SAIDA " << fullpath << endl;
 }
 
 void FazTudo(string url, int depth) {
@@ -522,16 +528,22 @@ void FazTudo(string url, int depth) {
 		string domain;
 		string path = "/";
 		string file = str_split[str_split.size()-1];
-		std::size_t found = str_split[0].find("http");
-		if (found != std::string::npos) {
+		
+		// Identifica se é link absoluto
+		
+		boost::regex absoluto("http|https");
+		if((boost::regex_search(str_split[0], absoluto))){
 			domain = str_split[2];
 			for (int i = 3; i < (int)str_split.size();i++) {
 				path += str_split[i];
 				if (i < (int)str_split.size() - 1)
 					path += "/";
 			}
-		} else {
-			domain = str_split[0];
+		} else {	// link relativo
+			domain = host_atual;
+			path = path_atual + str_split[0];
+			//cout << "LINK RELATIVO ARRUMADO " << domain << path << endl;
+			//domain = str_split[0];
 		}
 
 		//if (domain.find("www") != std::string::npos) {
@@ -547,7 +559,7 @@ void FazTudo(string url, int depth) {
 		bool existe = false;
 		for (int i = 0; i < (int) lista_urls_visitadas.size();i++) {
 			if (lista_urls_visitadas[i] == new_url) {
-				std::cout << "URL jah existe na lista:" << new_url << std::endl;
+				//std::cout << "URL jah existe na lista:" << new_url << std::endl;
 				//cout << "Visitada " << lista_urls_visitadas[i] << endl;
 				existe = true;
 			}
@@ -578,12 +590,13 @@ void FazTudo(string url, int depth) {
 			
 				if (!existe) {
 					lista_urls_visitadas.push_back(new_url);
-					std::cout << "Profundidade:" << depth << std::endl;
-					/**host_atual.clear();
-					host_atual += domain;
-					path.clear();
-					path_atual += path;
-					cout << "path_atual " <<  path_atual << endl;**/
+					//std::cout << "Profundidade:" << depth << std::endl;
+					//host_atual.clear();
+					host_atual = domain;
+					//path.clear();
+					path_atual = path;
+					//cout << "host_atual " <<  host_atual << endl;
+					//cout << "path_atual " <<  path_atual << endl;
 					FazTudo(new_url,depth-1);
 				}
 			}
@@ -595,10 +608,21 @@ void FazTudo(string url, int depth) {
 }
 
 int main(int argc , char *argv[]) {
+	string url;
+	int depth;
+	
+	if(argc != 3){
+		cout << "parametros invalidos" << endl;
+		return 0;
+	}
+	
+	url = argv[1];
+	depth = atoi (argv[2]);
 
     //FazTudo("http://www.ausentesonline.com.br/imagem.php?src=img_turismo_oqueconhecer/museu_02.jpg",2);
-    FazTudo("http://lista10.org/cinema/os-10-filmes-mais-caros-da-historia-do-cinema/",1);
-
+    //FazTudo("http://lista10.org/cinema/os-10-filmes-mais-caros-da-historia-do-cinema/",1);
+	FazTudo(url, depth);
+	
 	/**
     http m_http("http://lista10.org/",1);
 	m_http.start();
