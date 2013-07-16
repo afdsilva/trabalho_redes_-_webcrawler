@@ -72,9 +72,8 @@ int create_socket(){
 char *get_ip (char *domain){
 	struct hostent *host;
 	char *host_ip;
-
-	host = gethostbyname(domain);
 	
+	host = gethostbyname(domain);
 	if(host == NULL){
 		cout << "Erro gethostbyname" << endl;
 		return NULL;
@@ -153,7 +152,7 @@ std::vector<string> receive_data(int *socket, char *host, char *path){
 	//std::cout << fullpath << std::endl;
 	**/
 	std::ofstream saida(fullpath.c_str(), ios::out);
-
+	cout << "fullpath " << fullpath << endl;
 	send_request(socket, message);
 	
 	int tam = 0;
@@ -169,8 +168,16 @@ std::vector<string> receive_data(int *socket, char *host, char *path){
 	string resposta;
 	resposta.clear();
 	
+	struct timeval tv; /* timeval and timeout stuff added by davekw7x */
+	int timeouts = 0;
+	tv.tv_sec = 3;
+	tv.tv_usec = 0;
+	if (setsockopt(*socket, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv,  sizeof tv)){
+	  perror("setsockopt");
+	}
+	
 	//Receive a reply from the server
-	while( (tam = recv(*socket, server_reply ,BUFSIZ, 0)) > 0) {
+	while((tam = recv(*socket, server_reply ,BUFSIZ, 0)) > 0  && (++timeouts < 10000)) {
 		resposta += server_reply;
 		totalTam = totalTam + tam;
 		//std::cout << "Tamanho: " << tam << std::endl;
@@ -209,10 +216,8 @@ std::vector<string> receive_data(int *socket, char *host, char *path){
 	//cout << resposta;
 	size_t pos = resposta.find("\r\n\r\n");
 	string headerStr( resposta.begin(), resposta.begin()+pos );
-
-
-
-	if (headerStr.find("text/html") != std::string::npos) {
+	std::size_t found = headerStr.find("text/html");
+	if (found != std::string::npos) {
 
 		//boost::regex e("<\\s*A\\s+[^>]*href\\s*=\\s*\"([^\"]*)\"|<img.+?src=[\"'](.+?)[\"'].+?>",
 		boost::regex e("<\\s*A\\s+[^>]*href\\s*=\\s*\"([^\"]*)\"",
@@ -224,16 +229,22 @@ std::vector<string> receive_data(int *socket, char *host, char *path){
 
 		//cout << "URL's encontradas " << ":" << endl;
 		regex_split(back_inserter(l), resposta, e);
-
+		
+		boost::regex invalid("mailto:|javascript:");
+		
 		while(l.size()){
 			resposta = *(l.begin());
 			l.pop_front();
-			//cout << resposta << endl;
-			if (!resposta.empty())
-				retorno.push_back(resposta);
+			// Teste para verificar se no <a href> contem mailto: ou javascript:
+			if(!(boost::regex_search(resposta, invalid))){
+				if (!resposta.empty()){
+					retorno.push_back(resposta);
+				}
+			}
 		}
 	}
 	saida.close();
+	
 	return retorno;
 }
 
@@ -254,6 +265,11 @@ void create_dir(char *host, char *path){
 	diretorio += "/";
 	diretorio += host_dir;
 	diretorio += "/";
+	
+	/**boost::regex test("/");
+	if(boost::regex_search(path, test)){
+		diretorio += "/";
+	}**/
 
 	struct stat fileStat;
 	if (stat(diretorio.c_str(),&fileStat) < 0) {
@@ -268,17 +284,25 @@ void create_dir(char *host, char *path){
 	string extensao = "";
 	string temp;
 	boost::split_regex(str_split, path_dir,boost::regex("/"));
-
+	
+	temp.clear();
+	temp += diretorio;
 	for (int i = 0; i < (int)str_split.size(); i++) {
 		cout << str_split[i] << endl;
 		if (!str_split[i].empty()) {
-			if (str_split[i].find("?") != std::string::npos || !extensao.empty()) {
+			std::size_t found = str_split[i].find("?");
+			if (found != std::string::npos || !extensao.empty()) {
 				if (!extensao.empty())
 					temp += "_";
 				extensao = ".html";
-				temp += str_split[i];
-			} else {
-				temp += str_split[i];
+				if(i < (int)str_split.size() -1){
+					temp += str_split[i];
+				}
+			} else { 
+				
+				if(i < (int)str_split.size() -1){
+					temp += str_split[i] + "/";
+				}
 				if (stat(temp.c_str(),&fileStat) < 0) {
 					cout << "temp: " << temp << endl;
 					if((status = mkdir(temp.c_str(), 0777)) < 0){
@@ -288,10 +312,12 @@ void create_dir(char *host, char *path){
 			}
 		}
 	}
-	fullpath = diretorio;
+	fullpath.clear();
+	//fullpath = diretorio;
 	fullpath += temp;
+	fullpath += str_split[str_split.size()-1];
 	fullpath += extensao;
-	cout << "Saida: " << fullpath << endl;
+	cout << "SAIDA " << fullpath << endl;
 }
 
 void FazTudo(string url, int depth) {
@@ -305,7 +331,8 @@ void FazTudo(string url, int depth) {
 		string domain;
 		string path = "/";
 		string file = str_split[str_split.size()-1];
-		if (str_split[0].find("http") != std::string::npos) {
+		std::size_t found = str_split[0].find("http");
+		if (found != std::string::npos) {
 			domain = str_split[2];
 			for (int i = 3; i < (int)str_split.size();i++) {
 				path += str_split[i];
@@ -315,53 +342,63 @@ void FazTudo(string url, int depth) {
 		} else {
 			domain = str_split[0];
 		}
-		if (domain.find("www") != std::string::npos) {
-			domain.replace(domain.begin(),domain.begin()+4,"");
-		}
+
+		//if (domain.find("www") != std::string::npos) {
+			//domain.replace(domain.begin(),domain.begin()+4,"");
+		//}
+		
 		//cout << "domain: " << domain << endl;
 		//cout << "path: " << path << endl;
 		//cout << "file: " << file << endl;
 		char * host_test = (char *)domain.c_str();
 		char * path_test = (char *)path.c_str();
-
-		int socket_desc;
-		struct sockaddr_in server;
-
-		//http:///wp-content/uploads/2013/03/intranet-corporativa-200x200.jpg
-		//digitaisdomarketing.com.br
-		//wp-content/uploads/2013/03/intranet-corporativa-200x200.jpg
-		//intranet-corporativa-200x200.jpg
-
-		create_dir(host_test, path_test);
-		socket_desc = create_socket();
-		socket_address(&server, host_test);
-		if ((int)server.sin_addr.s_addr == -1)
-			return;
-
-		socket_connect(&socket_desc, &server);
-
-		std::vector<string> lista = receive_data(&socket_desc, host_test, path_test);
 		std::string new_url;
 		bool existe = false;
-		for (int i=0; i < (int) lista.size();i++) {
-			new_url = lista[i];
-			cout << new_url << endl;
-			existe = false;
-			for (int i = 0; i < (int) lista_urls_visitadas.size();i++) {
-				if (lista_urls_visitadas[i] == new_url) {
-					std::cout << "URL jah existe na lista:" << new_url << std::endl;
-					existe = true;
-				}
-			}
-			if (!existe) {
-				lista_urls_visitadas.push_back(new_url);
-				std::cout << "Profundidade:" << depth << std::endl;
-				FazTudo(new_url,depth-1);
+		for (int i = 0; i < (int) lista_urls_visitadas.size();i++) {
+			if (lista_urls_visitadas[i] == new_url) {
+				std::cout << "URL jah existe na lista:" << new_url << std::endl;
+				//cout << "Visitada " << lista_urls_visitadas[i] << endl;
+				existe = true;
 			}
 		}
-
-	    if((shutdown(socket_desc, 2)) < 0){
-			cout << "Erro ao fechar o socket" << endl;
+		
+		if(!existe){
+			int socket_desc;
+			struct sockaddr_in server;
+	
+			//http:///wp-content/uploads/2013/03/intranet-corporativa-200x200.jpg
+			//digitaisdomarketing.com.br
+			//wp-content/uploads/2013/03/intranet-corporativa-200x200.jpg
+			//intranet-corporativa-200x200.jpg
+			create_dir(host_test, path_test);
+			socket_desc = create_socket();
+			socket_address(&server, host_test);
+			
+			if ((int)server.sin_addr.s_addr == -1)
+				return;
+	
+			socket_connect(&socket_desc, &server);
+	
+			std::vector<string> lista = receive_data(&socket_desc, host_test, path_test);
+			for (int i=0; i < (int) lista.size();i++) {
+				new_url = lista[i];
+				cout << new_url << endl;
+				existe = false;
+			
+				if (!existe) {
+					lista_urls_visitadas.push_back(new_url);
+					std::cout << "Profundidade:" << depth << std::endl;
+					/**host_atual.clear();
+					host_atual += domain;
+					path.clear();
+					path_atual += path;
+					cout << "path_atual " <<  path_atual << endl;**/
+					FazTudo(new_url,depth-1);
+				}
+			}
+			if((shutdown(socket_desc, 2)) < 0){
+				cout << "Erro ao fechar o socket" << endl;
+			}
 		}
 	}
 }
@@ -369,7 +406,7 @@ void FazTudo(string url, int depth) {
 int main(int argc , char *argv[]) {
 
     //FazTudo("http://www.ausentesonline.com.br/imagem.php?src=img_turismo_oqueconhecer/museu_02.jpg",2);
-    FazTudo("http://www.peliculasimportadas.com.br",2);
+    FazTudo("http://lista10.org/cinema/os-10-filmes-mais-caros-da-historia-do-cinema/",2);
 
 	return 0;
 }

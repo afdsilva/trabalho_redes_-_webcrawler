@@ -18,6 +18,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <pwd.h>
+#include <sys/time.h>
 
 #define PORT 80		// PORTA PADRAO HTTP
 
