@@ -1,0 +1,48 @@
+#!/bin/bash
+
+echo "MALE Webcrawler v1.0" >&2
+echo "USO: ./webcrawler.sh <url> <profundidade>" >&2
+argumentos=0;
+if [ "$#" == 0 ]; then
+      echo "Ajuda" >&2
+      echo "Repositorio GIT: https://github.com/andresilvaprogramador/trabalho_redes_-_webcrawler.git" >&2
+      echo "" >&2
+      echo "" >&2
+      echo "-h : esta ajuda" >&2
+      echo "-c : compila webcrawler" >&2
+      echo "-i : instala bibliotecas necessarias para compilacao" >&2
+else
+while getopts ":hci" opt; do
+  case $opt in
+    h)
+      echo "Ajuda" >&2
+      echo "MALE Webcrawler v1.0" >&2
+      echo "Repositorio GIT: https://github.com/andresilvaprogramador/trabalho_redes_-_webcrawler.git" >&2
+      echo "" >&2
+      echo "USO: ./webcrawler <url> <profundidade>" >&2
+      echo "" >&2
+      echo "-h : esta ajuda" >&2
+      echo "-c : compila webcrawler" >&2
+      echo "-i : instala bibliotecas necessarias para compilacao" >&2
+      ;;
+    c)
+      echo "Compilar webcrawler" >&2
+      make webcrawler
+      ;;
+    i)
+      echo "Instalar bibliotecas necessarias pra compilacao" >&2
+      sudo apt-get install libboost-regex-dev      
+      ;;
+    \?)
+      echo "Opcao invalida: -$OPTARG" >&2
+      ;;
+  esac
+argumentos=1;
+done
+if [ $# = 2 ]; then
+	if [ $argumentos = 0 ]; then
+		./webcrawler $1 $2
+	fi
+fi
+
+fi
