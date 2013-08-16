@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "MALE Webcrawler v1.0" >&2
-echo "USO: ./executeme.sh <url> <profundidade>" >&2
+echo "USO: ./executeme <url> <profundidade>" >&2
 echo "A lista de links e salva em saida.txt" >&2
 echo "Download dos arquivos e feito na pasta padrao do usuario" >&2
 echo "~/male_webcrawler/" >&2

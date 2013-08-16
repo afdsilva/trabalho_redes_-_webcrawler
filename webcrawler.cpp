@@ -407,7 +407,7 @@ void FazTudo(string url, int depth) {
 		std::cerr << "Erro ao fechar o socket" << endl;
 	}
 }
-
+/**
 int main(int argc , char *argv[]) {
 	string url;
 	int depth;
@@ -442,7 +442,8 @@ int main(int argc , char *argv[]) {
 	for (int i = 0; i < (int) lista.size();i++) {
 		std::cerr << lista[i] << std::endl;
 	}
-	**/
+	/** /
 
 	return 0;
 }
+**/
