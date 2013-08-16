@@ -24,7 +24,7 @@
 
 using namespace std;
 
-#define SERVER  "www.www.openssl.org"
+#define SERVER  "www.openssl.org"
 #define PORT 443
 
 class SslConnection {
