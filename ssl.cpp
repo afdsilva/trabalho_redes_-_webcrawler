@@ -5,52 +5,17 @@
  *      Author: andref
  */
 
+#include "ssl.h"
 
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <netdb.h>
-#include <unistd.h>
-#include <errno.h>
-
-#include <openssl/rand.h>
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-
-#include <cstdio>
-#include <cstdlib>
-#include <iostream>
-#include <string>
-
-using namespace std;
-
-#define SERVER  "www.openssl.org"
-#define PORT 443
-
-class SslConnection {
-private:
-	int socket;
-	SSL * sslHnd;
-	SSL_CTX * sslCtx;
-
-	bool isValid;
-public:
-	SslConnection();
-	virtual ~SslConnection();
-
-	void SslSend(const char * text);
-	string SslReceive();
-
-};
-
-int tcpConnect ();
+int tcpConnect (const char * url, int port);
 
 int main() {
-
 	//criando conexao
 	string resposta;
 	SslConnection * sslTest = new SslConnection();
-	sslTest->SslSend("GET / \r\n\r\n");
+	sslTest->LocalCertificate("","/usr/lib/ssl/certs");
+	sslTest->Connect("www.google.com",443);
+	sslTest->SslSend("GET /?gws_rd=cr \r\n\r\n");
 	resposta = sslTest->SslReceive();
 
 	std::cout << resposta << std::endl;
@@ -60,37 +25,11 @@ int main() {
 }
 
 SslConnection::SslConnection() {
-	std::cout << "Criando Conexao Segura" << std::endl;
 	this->sslHnd = NULL;
 	this->sslCtx = NULL;
-
-	this->socket = tcpConnect();
-
-	if (this->socket) {
-		SSL_load_error_strings();
-
-		SSL_library_init();
-
-		this->sslCtx = SSL_CTX_new (SSLv23_client_method());
-		if (this->sslCtx == NULL)
-			ERR_print_errors_fp(stderr);
-
-		this->sslHnd = SSL_new (this->sslCtx);
-		if (this->sslHnd == NULL)
-			ERR_print_errors_fp(stderr);
-
-		if (!SSL_set_fd(this->sslHnd, this->socket))
-			ERR_print_errors_fp(stderr);
-
-		if (SSL_connect(this->sslHnd) != 1)
-			ERR_print_errors_fp(stderr);
-
-	} else {
-		std::cout << "Conexao falhou" << std::endl;
-	}
+	this->socket = 0;
 }
 SslConnection::~SslConnection() {
-	std::cout << "Destruindo Conexao Segura" << std::endl;
 	if (this->socket)
 		close(this->socket);
 	if (this->sslHnd) {
@@ -101,15 +40,86 @@ SslConnection::~SslConnection() {
 		SSL_CTX_free(this->sslCtx);
 
 }
+bool SslConnection::LocalCertificate(string file, string path) {
+	bool retorno = true;
+	try {
+		this->fileCertificate = file;
+		this->pathCertificate = path;
+	} catch (int e) {
 
-void SslConnection::SslSend(const char * text) {
-	std::cout << "Enviando Requisição " << std::endl;
-	if (this->sslHnd != NULL)
-		SSL_write(this->sslHnd, text, strlen(text));
+	}
+	return retorno;
+}
+bool SslConnection::Connect(const char * url, int port) {
+	bool retorno = true;
+	string erro;
+	try {
+		this->socket = tcpConnect(url, port);
+
+		if (this->socket) {
+			SSL_load_error_strings();
+
+			SSL_library_init();
+
+			this->sslCtx = SSL_CTX_new (SSLv23_client_method());
+			if (this->sslCtx == NULL)
+				throw 1;
+			if(!SSL_CTX_load_verify_locations(this->sslCtx, (this->fileCertificate.empty() ? NULL : this->fileCertificate.c_str()), (this->pathCertificate.empty() ? NULL : this->pathCertificate.c_str())))
+				std::cerr << "Erro no caminho dos certificados locais" << std::endl;
+
+			this->sslHnd = SSL_new (this->sslCtx);
+			if (this->sslHnd == NULL)
+				throw 3;
+
+			if (!SSL_set_fd(this->sslHnd, this->socket))
+				throw 4;
+
+			if (SSL_connect(this->sslHnd) != 1)
+				throw 5;
+
+			if(SSL_get_verify_result(this->sslHnd) != X509_V_OK) {
+				std::cerr << "Certificado inválido" << std::endl;
+			}
+		} else
+			throw 0;
+	} catch (int e) {
+		switch (e) {
+		case 1:
+			erro = "Não foi possivel criar contexto";
+			break;
+		case 3:
+			erro = "Não foi possivel criar o controlador da conexao";
+			break;
+		case 4:
+			erro = "Não foi possivel conectar a estrutura SSL a conexão";
+			break;
+		case 5:
+			erro = "Não foi possivel iniciar handshake";
+			break;
+		default:
+			erro = "Conexão falhou";
+			break;
+		}
+		std::cerr << erro << std::endl;
+		retorno = false;
+	}
+	return retorno;
+}
+bool SslConnection::SslSend(const char * text) {
+	bool retorno = true;
+	try {
+		if (this->sslHnd != NULL)
+			SSL_write(this->sslHnd, text, strlen(text));
+		else
+			throw 0;
+	} catch (int e) {
+		retorno = false;
+	}
+	return retorno;
+
 }
 
 string SslConnection::SslReceive() {
-	std::cout << "Recebendo resposta" << std::endl;
 	string retorno;
 	const int size = 1024;
 	int received;
@@ -130,12 +140,12 @@ string SslConnection::SslReceive() {
 	return retorno;
 }
 
-int tcpConnect () {
+int tcpConnect (const char * url, int port) {
   int error, handle;
   struct hostent *host;
   struct sockaddr_in server;
 
-  host = gethostbyname (SERVER);
+  host = gethostbyname (url);
   handle = socket (AF_INET, SOCK_STREAM, 0);
   if (handle == -1)
     {
@@ -145,7 +155,7 @@ int tcpConnect () {
   else
     {
       server.sin_family = AF_INET;
-      server.sin_port = htons (PORT);
+      server.sin_port = htons (port);
       server.sin_addr = *((struct in_addr *) host->h_addr);
       bzero (&(server.sin_zero), 8);
 
