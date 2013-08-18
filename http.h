@@ -21,16 +21,28 @@
 #include <sys/time.h>
 
 #include "Thread.h"
+#include "ssl.h"
 
 #define PORT 80		// PORTA PADRAO HTTP
 
 using namespace std;
+class UrlNodo {
+public:
+	string url;
+	string CN;
+	bool autoassinado;
+	bool useSsl;
 
+	UrlNodo();
+	bool operator==(const UrlNodo & a);
+};
 class http : public Thread {
 private:
 	static std::vector<Thread> threads;
 
 	string url;
+	int port;
+
 	int depth;
 	string domain;
 	string path;
@@ -39,30 +51,46 @@ private:
 
 	int socket_desc;
 
+	SslConnection * conexaoSegura;
+
+	bool secure;
+	bool valid;
+
 	char * http_query;
-	struct sockaddr_in server;
-	struct hostent * host;
+	std::vector<string> urlList;
 
 	Lock * _lck;
 
 public:
-	http(string url,int depth);
+	http(string url);
 	void run();
 
 	virtual ~http();
 
-	static std::vector<string> urlVisited;
-	static std::vector<string> urlUnVisited;
+	static std::vector<UrlNodo *> urlVisited;
+
+	static void Recursive(string url, int depth);
 
 public:
-	int Server();
+	int Connect();
 	std::vector<string> GetUrlList();
+
+	string GetCertificateOwner();
+	bool IsSelfSign();
+	bool Secure();
+	bool IsValid();
+	void static LocalCertificates(string file, string path);
+	static string certificateFile;
+	static string certificatePath;
+
+
 private:
 	int ParseUrl();
 	int CreateDir();
 	int BuildQuery();
+	string HtmlReceive();
 	int SendRequest();
-	int ReceiveData();
+	int ParseData(string reply);
 
 };
 
