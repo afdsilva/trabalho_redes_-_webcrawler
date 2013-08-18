@@ -51,6 +51,4 @@ public:
 	string GetCertificateSubString(string substring);
 };
 
-
-
 #endif /* SSL_H_ */
