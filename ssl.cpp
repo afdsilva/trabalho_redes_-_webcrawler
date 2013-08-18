@@ -1,28 +1,9 @@
 /*
  * ssl.cpp
  *
- *  Created on: 16/08/2013
- *      Author: andref
  */
 
 #include "ssl.h"
-
-int tcpConnect (const char * url, int port);
-
-int main() {
-	//criando conexao
-	string resposta;
-	SslConnection * sslTest = new SslConnection();
-	sslTest->LocalCertificate("","/usr/lib/ssl/certs");
-	sslTest->Connect("www.google.com",443);
-	sslTest->SslSend("GET /?gws_rd=cr \r\n\r\n");
-	resposta = sslTest->SslReceive();
-
-	std::cout << resposta << std::endl;
-	delete(sslTest);
-
-	return 0;
-}
 
 SslConnection::SslConnection() {
 	this->sslHnd = NULL;
@@ -50,11 +31,11 @@ bool SslConnection::LocalCertificate(string file, string path) {
 	}
 	return retorno;
 }
-bool SslConnection::Connect(const char * url, int port) {
+bool SslConnection::Connect(int socket) {
 	bool retorno = true;
 	string erro;
 	try {
-		this->socket = tcpConnect(url, port);
+		this->socket = socket;
 
 		if (this->socket) {
 			SSL_load_error_strings();
@@ -64,9 +45,12 @@ bool SslConnection::Connect(const char * url, int port) {
 			this->sslCtx = SSL_CTX_new (SSLv23_client_method());
 			if (this->sslCtx == NULL)
 				throw 1;
-			if(!SSL_CTX_load_verify_locations(this->sslCtx, (this->fileCertificate.empty() ? NULL : this->fileCertificate.c_str()), (this->pathCertificate.empty() ? NULL : this->pathCertificate.c_str())))
-				std::cerr << "Erro no caminho dos certificados locais" << std::endl;
-
+			if (this->fileCertificate.empty() && this->pathCertificate.empty()) {
+				//sem certificado local
+			} else {
+				if(!SSL_CTX_load_verify_locations(this->sslCtx, (this->fileCertificate.empty() ? NULL : this->fileCertificate.c_str()), (this->pathCertificate.empty() ? NULL : this->pathCertificate.c_str())))
+					std::cerr << "Erro no caminho dos certificados locais" << std::endl;
+			}
 			this->sslHnd = SSL_new (this->sslCtx);
 			if (this->sslHnd == NULL)
 				throw 3;
@@ -77,9 +61,18 @@ bool SslConnection::Connect(const char * url, int port) {
 			if (SSL_connect(this->sslHnd) != 1)
 				throw 5;
 
-			if(SSL_get_verify_result(this->sslHnd) != X509_V_OK) {
-				std::cerr << "Certificado inválido" << std::endl;
+			if (this->fileCertificate.empty() && this->pathCertificate.empty()) {
+				//sem certificado
+			} else {
+				if(SSL_get_verify_result(this->sslHnd) != X509_V_OK) {
+					std::cerr << "Certificado inválido" << std::endl;
+				} else {
+					X509 * certs = SSL_get_peer_certificate(this->sslHnd);
+					this->issuerCertificate = X509_NAME_oneline(X509_get_issuer_name(certs), 0, 0);
+					free(certs);
+				}
 			}
+
 		} else
 			throw 0;
 	} catch (int e) {
@@ -121,11 +114,9 @@ bool SslConnection::SslSend(const char * text) {
 
 string SslConnection::SslReceive() {
 	string retorno;
-	const int size = 1024;
-	int received;
-	char buffer[size];
 
 	if (this->sslHnd != NULL) {
+		/**
 		while(true) {
 			received = SSL_read(this->sslHnd, buffer, size);
 			buffer[received] = '\0';
@@ -135,38 +126,52 @@ string SslConnection::SslReceive() {
 			if (received < size)
 				break;
 		}
+		**/
+		int tam = 0;
+		char buffer[BUFSIZ];
+		int header = 0;
+		char * content = NULL;
+
+		while ((tam = SSL_read(this->sslHnd, buffer, BUFSIZ)) > 0) {
+			retorno += buffer;
+			//std::cout << "Tamanho: " << tam << std::endl;
+			if (header == 0) {
+				content = strstr(buffer,"\r\n\r\n");
+				if (content != NULL) {
+					header = 1;
+					content +=4;
+					//ponteiro = content - server_reply;
+				}
+			} else {
+				//ponteiro = 0;
+				content = buffer;
+				//puts(content);
+			}
+
+			//saida.write(content,tam-ponteiro);
+
+			memset(buffer,0,tam);
+
+		}
 	}
 
 	return retorno;
 }
 
-int tcpConnect (const char * url, int port) {
-  int error, handle;
-  struct hostent *host;
-  struct sockaddr_in server;
+string SslConnection::GetCertificateSubString(string substring) {
+	string retorno;
+	if (!this->issuerCertificate.empty()) {
+		vector<string> str_split;
 
-  host = gethostbyname (url);
-  handle = socket (AF_INET, SOCK_STREAM, 0);
-  if (handle == -1)
-    {
-      perror ("Socket");
-      handle = 0;
-    }
-  else
-    {
-      server.sin_family = AF_INET;
-      server.sin_port = htons (port);
-      server.sin_addr = *((struct in_addr *) host->h_addr);
-      bzero (&(server.sin_zero), 8);
+		boost::split_regex(str_split, this->issuerCertificate,boost::regex("/"));
+		std::size_t pos;
 
-      error = connect (handle, (struct sockaddr *) &server,
-                       sizeof (struct sockaddr));
-      if (error == -1)
-        {
-          perror ("Connect");
-          handle = 0;
-        }
-    }
-
-  return handle;
+		for (unsigned int i = 0; i < str_split.size(); i++) {
+			if ((pos = str_split[i].find(substring)) != std::string::npos) {
+				retorno = str_split[i].substr(substring.length()+1);
+				break;
+			}
+		}
+	}
+	return retorno;
 }

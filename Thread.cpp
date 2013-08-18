@@ -21,7 +21,6 @@ unsigned int Thread::tid() const {
 
 // Uses default argument: arg = NULL
 void Thread::start(void *arg) {
-	cout << "Thread::start()" << endl;
 	int ret;
 	if (!started) {
 	started = true;
@@ -48,7 +47,6 @@ void Thread::join() {
 }
 // Function that is to be executed by the thread
 void * Thread::exec(void *thr) {
-	cout << "Thread::exec()" << endl;
 	reinterpret_cast<Thread *> (thr)->run();
 	return NULL;
 }

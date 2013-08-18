@@ -1,8 +1,6 @@
 /*
  * ssl.h
  *
- *  Created on: 17/08/2013
- *      Author: andref
  */
 
 #ifndef SSL_H_
@@ -14,6 +12,9 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <errno.h>
+
+#include <boost/regex.hpp>  // BIBLIOTECA PARA PARSEAR O HTML
+#include <boost/algorithm/string/regex.hpp>
 
 #include <openssl/rand.h>
 #include <openssl/ssl.h>
@@ -35,16 +36,19 @@ private:
 	string pathCertificate;
 	string fileCertificate;
 
+	string issuerCertificate;
+
 public:
 	SslConnection();
 	virtual ~SslConnection();
 
 	bool LocalCertificate(string file, string path);
-	bool Connect(const char * server, int port);
+	bool Connect(int socket);
 
 	bool SslSend(const char * text);
 	string SslReceive();
 
+	string GetCertificateSubString(string substring);
 };
 
 

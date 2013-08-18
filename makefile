@@ -4,17 +4,17 @@
 CC=g++
 
 # Objects
-OBJETOS=http.o Thread.o webcrawler.o
+OBJETOS=http.o ssl.o Thread.o webcrawler.o
 
 # Compilador flags - Warning, debug, boost
-CPPFLAGS=-std=c++0x -Wall -g -lm -lboost_regex
+CPPFLAGS=-std=c++0x -Wall -g
 
+LDFLAGS=-lm -lboost_regex -lssl
 EXECUTAVEL=webcrawler
 BASE_FILENAME=trabalho_redes_-_webcrawler
 
 all: $(OBJETOS)
-	$(CC) $(OBJETOS) $(CPPFLAGS) -o $(EXECUTAVEL)
-	rm -rf $(OBJETOS)
+	$(CC) $(OBJETOS) $(CPPFLAGS) $(LDFLAGS) -o $(EXECUTAVEL)
 
 webcrawler: http.h webcrawler.cpp
 	$(CC) $(CPPFLAGS) -c webcrawler.cpp
@@ -22,11 +22,16 @@ webcrawler: http.h webcrawler.cpp
 http: http.h http.cpp
 	$(CC) $(CPPFLAGS) -c http.cpp
 	
+ssl: ssl.h ssl.cpp
+	$(CC) $(CPPFLAGS) -c ssl.cpp
+	
 Thread: Thread.h Thread.cpp
 	$(CC) $(CPPFLAGS) -c Thread.cpp
 
 clean:
+	rm -rf *.o
 	rm -rf $(EXECUTAVEL)
+	rm -rf saida.txt
 
 package:
 	@echo "Empacotando: "
