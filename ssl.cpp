@@ -116,17 +116,7 @@ string SslConnection::SslReceive() {
 	string retorno;
 
 	if (this->sslHnd != NULL) {
-		/**
-		while(true) {
-			received = SSL_read(this->sslHnd, buffer, size);
-			buffer[received] = '\0';
-			if (received > 0)
-				retorno += buffer;
 
-			if (received < size)
-				break;
-		}
-		**/
 		int tam = 0;
 		char buffer[BUFSIZ];
 		int header = 0;
@@ -134,7 +124,6 @@ string SslConnection::SslReceive() {
 
 		while ((tam = SSL_read(this->sslHnd, buffer, BUFSIZ)) > 0) {
 			retorno += buffer;
-			//std::cout << "Tamanho: " << tam << std::endl;
 			if (header == 0) {
 				content = strstr(buffer,"\r\n\r\n");
 				if (content != NULL) {
