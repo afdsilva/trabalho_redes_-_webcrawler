@@ -39,6 +39,8 @@ private:
 	string issuerCertificate;
 	string subjectCertificate;
 
+	bool certificateValidity;
+
 public:
 	SslConnection();
 	virtual ~SslConnection();
@@ -51,6 +53,7 @@ public:
 
 	string GetCertificateIssuer(string substring);
 	string GetCertificateSubject(string substring);
+	bool GetCertificateValidity();
 };
 
 #endif /* SSL_H_ */

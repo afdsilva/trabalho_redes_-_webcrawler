@@ -33,6 +33,7 @@ public:
 	string O;
 	bool autoassinado;
 	bool useSsl;
+	bool certificateValidity;
 
 	UrlNodo();
 	bool operator==(const UrlNodo & a);
@@ -55,6 +56,7 @@ private:
 	SslConnection * conexaoSegura;
 
 	bool secure;
+	bool certificateValidity;
 	bool valid;
 
 	char * http_query;
@@ -81,6 +83,7 @@ public:
 	bool IsSelfSign();
 	bool Secure();
 	bool IsValid();
+	bool GetCertificateValidity();
 	void static LocalCertificates(string file, string path);
 	static string certificateFile;
 	static string certificatePath;

@@ -15,3 +15,8 @@
 #arquivos especificos do eclipse
 .cproject
 .project
+Debug
+Release
+
+#arquivo compilado
+testeme

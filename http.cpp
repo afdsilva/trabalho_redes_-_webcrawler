@@ -10,6 +10,7 @@ http::http(string url) {
 	this->url = url;
 	this->port = PORT;
 	this->secure = false;
+	this->certificateValidity = false;
 	this->valid = true;
 
 	this->conexaoSegura = NULL;
@@ -32,6 +33,7 @@ void http::run() {
 			if (!conexaoSegura->Connect(this->socket_desc))
 				throw 4;
 			conexaoSegura->SslSend(this->http_query);
+			this->certificateValidity = conexaoSegura->GetCertificateValidity();
 			resposta = conexaoSegura->SslReceive();
 
 		} else {
@@ -325,19 +327,29 @@ int http::ParseData(string reply) {
 string http::GetCertificateOwner() {
 	string retorno;
 	if (secure && this->conexaoSegura != NULL)
-		retorno = this->conexaoSegura->GetCertificateSubject("CN");
+		retorno = this->conexaoSegura->GetCertificateSubject("CN=");
 	return retorno;
 }
 string http::GetCertificateOwnerOrganization() {
 	string retorno;
-	if (secure && this->conexaoSegura != NULL)
-		retorno = this->conexaoSegura->GetCertificateSubject("O");
+	if (secure && this->conexaoSegura != NULL) {
+		retorno = this->conexaoSegura->GetCertificateSubject("O=");
+		if (retorno.empty())
+			retorno = this->conexaoSegura->GetCertificateSubject("OU=");
+	}
 	return retorno;
 }
 bool http::IsSelfSign() {
 	bool retorno = false;
-	if (secure && this->conexaoSegura != NULL)
-		retorno = this->conexaoSegura->GetCertificateSubject("O") == this->conexaoSegura->GetCertificateIssuer("O") ? true : false;
+	if (secure && this->conexaoSegura != NULL) {
+		string organizationSubject = this->conexaoSegura->GetCertificateSubject("O=");
+		if (organizationSubject.empty())
+			organizationSubject = this->conexaoSegura->GetCertificateSubject("OU=");
+		string organizationIssuer = this->conexaoSegura->GetCertificateIssuer("O=");
+		if (organizationIssuer.empty())
+			organizationIssuer = this->conexaoSegura->GetCertificateIssuer("OU=");
+		retorno = organizationSubject == organizationIssuer ? true : false;
+	}
 	return retorno;
 }
 bool http::Secure() {
@@ -346,6 +358,11 @@ bool http::Secure() {
 bool http::IsValid() {
 	return this->valid;
 }
+
+bool http::GetCertificateValidity() {
+	return this->certificateValidity;
+}
+
 void http::LocalCertificates(string file, string path) {
 	http::certificateFile = file;
 	http::certificatePath = path;
@@ -367,6 +384,7 @@ void http::Recursive(string url, int depth) {
 		nodo->CN = m_http.GetCertificateOwner();
 		nodo->O = m_http.GetCertificateOwnerOrganization();
 		nodo->autoassinado = m_http.IsSelfSign();
+		nodo->certificateValidity = m_http.GetCertificateValidity();
 		http::urlVisited.push_back(nodo);
 		bool found = false;
 		if (depth > 0) {
@@ -393,6 +411,8 @@ void http::Recursive(string url, int depth) {
 UrlNodo::UrlNodo() {
 	this->autoassinado = false;
 	this->useSsl = false;
+
+	this->certificateValidity = false;
 }
 
 bool UrlNodo::operator==(const UrlNodo & b) {

@@ -30,6 +30,9 @@ int main(int argc , char *argv[]) {
 	}
 
 	url += argv[1];
+	if (http::certificateFile.empty() && http::certificatePath.empty())
+		std::cerr << "Nenhum certificado local carregado" << std::endl;
+
 	std::cerr << "URL Inicial: " << url << std::endl;
 	depth = std::atoi (argv[2]);
 
@@ -40,8 +43,8 @@ int main(int argc , char *argv[]) {
 		UrlNodo * nodo = http::urlVisited[i];
 		std::cout << nodo->url << std::endl ;
 		if (nodo->useSsl) {
-			std::cout << "		CN: " << nodo->CN << (nodo->autoassinado ? " AUTOASSINADO" : "") << std::endl;
-			std::cout << "		O: " << nodo->O << std::endl;
+			std::cout << "		CN: [ " << nodo->CN << " ]" << (!nodo->certificateValidity ? " Certificado não confiável" : "") << std::endl;
+			std::cout << "		O/OU: [ " << nodo->O << " ]" << (nodo->autoassinado ? " AUTOASSINADO" : "") << std::endl;
 		}
 	}
 

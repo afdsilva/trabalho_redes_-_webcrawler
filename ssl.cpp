@@ -9,6 +9,8 @@ SslConnection::SslConnection() {
 	this->sslHnd = NULL;
 	this->sslCtx = NULL;
 	this->socket = 0;
+
+	this->certificateValidity = false;
 }
 SslConnection::~SslConnection() {
 	if (this->socket)
@@ -45,8 +47,9 @@ bool SslConnection::Connect(int socket) {
 			this->sslCtx = SSL_CTX_new (SSLv23_client_method());
 			if (this->sslCtx == NULL)
 				throw 1;
-			if(!SSL_CTX_load_verify_locations(this->sslCtx, (this->fileCertificate.empty() ? NULL : this->fileCertificate.c_str()), (this->pathCertificate.empty() ? NULL : this->pathCertificate.c_str())))
-				std::cerr << "Erro no caminho dos certificados locais" << std::endl;
+			if(!SSL_CTX_load_verify_locations(this->sslCtx, (this->fileCertificate.empty() ? NULL : this->fileCertificate.c_str()), (this->pathCertificate.empty() ? NULL : this->pathCertificate.c_str()))) {
+				//std::cerr << "Erro no caminho dos certificados locais" << std::endl;
+			}
 
 			this->sslHnd = SSL_new (this->sslCtx);
 			if (this->sslHnd == NULL)
@@ -58,8 +61,11 @@ bool SslConnection::Connect(int socket) {
 			if (SSL_connect(this->sslHnd) != 1)
 				throw 5;
 
-			if(SSL_get_verify_result(this->sslHnd) != X509_V_OK)
-				std::cerr << "Certificado não confiável" << std::endl;
+			if(SSL_get_verify_result(this->sslHnd) != X509_V_OK) {
+				std::cerr << "	Certificado não confiável" << std::endl;
+				this->certificateValidity = false;
+			} else
+				this->certificateValidity = true;
 			X509 * certs = SSL_get_peer_certificate(this->sslHnd);
 			this->issuerCertificate = X509_NAME_oneline(X509_get_issuer_name(certs), 0, 0);
 			this->subjectCertificate = X509_NAME_oneline(X509_get_subject_name(certs), 0, 0);
@@ -157,7 +163,7 @@ string SslConnection::GetCertificateIssuer(string substring) {
 
 		for (unsigned int i = 0; i < str_split.size(); i++) {
 			if ((pos = str_split[i].find(substring)) != std::string::npos) {
-				retorno = str_split[i].substr(substring.length()+1);
+				retorno = str_split[i].substr(substring.length());
 				break;
 			}
 		}
@@ -175,10 +181,13 @@ string SslConnection::GetCertificateSubject(string substring) {
 
 		for (unsigned int i = 0; i < str_split.size(); i++) {
 			if ((pos = str_split[i].find(substring)) != std::string::npos) {
-				retorno = str_split[i].substr(substring.length()+1);
+				retorno = str_split[i].substr(substring.length());
 				break;
 			}
 		}
 	}
 	return retorno;
+}
+bool SslConnection::GetCertificateValidity() {
+	return this->certificateValidity;
 }
