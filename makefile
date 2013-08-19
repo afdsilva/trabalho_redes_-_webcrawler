@@ -10,7 +10,7 @@ OBJETOS=http.o ssl.o Thread.o webcrawler.o
 CPPFLAGS=-std=c++0x -Wall -g
 
 LDFLAGS=-lm -lboost_regex -lssl -lcrypto
-EXECUTAVEL=webcrawler
+EXECUTAVEL=testeme
 BASE_FILENAME=trabalho_redes_-_webcrawler
 
 all: $(OBJETOS)

@@ -6,7 +6,7 @@ int main(int argc , char *argv[]) {
 	string ca;
 	switch(argc) {
 	case 3:
-		http::certificatePath = "/usr/lib/ssl/certs";
+		//http::certificatePath = "/usr/lib/ssl/certs";
 		break;
 	case 4:
 		ca = argv[3];
@@ -40,8 +40,8 @@ int main(int argc , char *argv[]) {
 		UrlNodo * nodo = http::urlVisited[i];
 		std::cout << nodo->url << std::endl ;
 		if (nodo->useSsl) {
-			std::cout << "		Dono: " << nodo->CN << (nodo->autoassinado ? " AUTOASSINADO" : "") << std::endl;
-			std::cout << "		Organização: " << nodo->O << std::endl;
+			std::cout << "		CN: " << nodo->CN << (nodo->autoassinado ? " AUTOASSINADO" : "") << std::endl;
+			std::cout << "		O: " << nodo->O << std::endl;
 		}
 	}
 

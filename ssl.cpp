@@ -45,12 +45,10 @@ bool SslConnection::Connect(int socket) {
 			this->sslCtx = SSL_CTX_new (SSLv23_client_method());
 			if (this->sslCtx == NULL)
 				throw 1;
-			if (this->fileCertificate.empty() && this->pathCertificate.empty()) {
-				//sem certificado local
-			} else {
-				if(!SSL_CTX_load_verify_locations(this->sslCtx, (this->fileCertificate.empty() ? NULL : this->fileCertificate.c_str()), (this->pathCertificate.empty() ? NULL : this->pathCertificate.c_str())))
-					std::cerr << "Erro no caminho dos certificados locais" << std::endl;
-			}
+			cout << "de gratis:" << this->fileCertificate << this->pathCertificate << endl;
+			if(!SSL_CTX_load_verify_locations(this->sslCtx, (this->fileCertificate.empty() ? NULL : this->fileCertificate.c_str()), (this->pathCertificate.empty() ? NULL : this->pathCertificate.c_str())))
+				std::cerr << "Erro no caminho dos certificados locais" << std::endl;
+
 			this->sslHnd = SSL_new (this->sslCtx);
 			if (this->sslHnd == NULL)
 				throw 3;
@@ -61,19 +59,13 @@ bool SslConnection::Connect(int socket) {
 			if (SSL_connect(this->sslHnd) != 1)
 				throw 5;
 
-			if (this->fileCertificate.empty() && this->pathCertificate.empty()) {
-				//sem certificado
-			} else {
-				if(SSL_get_verify_result(this->sslHnd) != X509_V_OK) {
-					std::cerr << "Certificado inválido" << std::endl;
-				} else {
-					X509 * certs = SSL_get_peer_certificate(this->sslHnd);
-					this->issuerCertificate = X509_NAME_oneline(X509_get_issuer_name(certs), 0, 0);
-					this->subjectCertificate = X509_NAME_oneline(X509_get_subject_name(certs), 0, 0);
+			if(SSL_get_verify_result(this->sslHnd) != X509_V_OK)
+				std::cerr << "Certificado não confiável" << std::endl;
+			X509 * certs = SSL_get_peer_certificate(this->sslHnd);
+			this->issuerCertificate = X509_NAME_oneline(X509_get_issuer_name(certs), 0, 0);
+			this->subjectCertificate = X509_NAME_oneline(X509_get_subject_name(certs), 0, 0);
 
-					free(certs);
-				}
-			}
+			free(certs);
 
 		} else
 			throw 0;

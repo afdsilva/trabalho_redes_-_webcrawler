@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "MALE Webcrawler v1.1" >&2
+echo "MALE Webcrawler SSL v1.1" >&2
 echo "USO: ./testeme <url> <profundidade> --CApath=<caminho/para/pasta/certificados>" >&2
 echo "ou" >&2
 echo "USO: ./testeme <url> <profundidade> --CAfile=<caminho/para/arquivo/certifica>" >&2
@@ -23,7 +23,7 @@ while getopts ":hci" opt; do
     h)
       echo "" >&2
       echo "Ajuda" >&2
-      echo "MALE Webcrawler v1.1" >&2
+      echo "MALE Webcrawler SSL v1.1" >&2
       echo "Repositorio GIT: https://github.com/andresilvaprogramador/trabalho_redes_-_webcrawler.git" >&2
       echo "Branch: ssl" >&2
       echo "" >&2

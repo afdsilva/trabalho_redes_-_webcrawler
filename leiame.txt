@@ -1,4 +1,4 @@
-MALE Webcrawler:
+MALE Webcrawler SSL:
 
 Grupo:
 André Felipe da Silva - CComp
@@ -38,9 +38,12 @@ Testes:
 	https://sites.google.com/a/inf.ufpel.edu.br/pilla/home/redes-de-computadores
 	https://www.google.com/
 	https://www.openssl.org/
+	https://webmail.ufpel.edu.br/
 	
 	e respectivos sites em conexão normal não-segura
 	
 	Após resolver vários problemas particulares, de cada página obteve-se uma experiência satisfatória, foi possivel
 	da mesma forma que no trabalho anterior obter os links, e listar as páginas acessadas, com o adendo de conexões
 	seguras retornarem com o nome do Dono (CN) e da organização (O);
+	a pagina da ufpel, retornou um certificado auto-assinado, possivel assim verificar a legimidade, ao não informar
+	um certificado local, porém, não foi possivel verificar a validade de nenhum site. 
