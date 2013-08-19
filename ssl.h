@@ -37,6 +37,7 @@ private:
 	string fileCertificate;
 
 	string issuerCertificate;
+	string subjectCertificate;
 
 public:
 	SslConnection();
@@ -48,7 +49,8 @@ public:
 	bool SslSend(const char * text);
 	string SslReceive();
 
-	string GetCertificateSubString(string substring);
+	string GetCertificateIssuer(string substring);
+	string GetCertificateSubject(string substring);
 };
 
 #endif /* SSL_H_ */

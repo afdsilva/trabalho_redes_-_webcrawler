@@ -134,10 +134,13 @@ int http::ParseUrl() {
 				this->port = 443;
 			}
 			this->domain = str_split[2];
+
+			boost::regex arquivo(".*");
 			for (int i = 3; i < (int)str_split.size();i++) {
-				this->path += str_split[i];
-				if (i < (int)str_split.size() - 1)
+				if (i < (int)str_split.size() - 1) {
+					this->path += str_split[i];
 					this->path += "/";
+				}
 			}
 		} else {
 			this->domain = str_split[0];
@@ -255,28 +258,56 @@ int http::ParseData(string reply) {
 			std::vector<string> aux;
 			boost::regex invalid("mailto:|javascript:");
 			boost::regex absoluto("http|https");
-			boost::regex arquivo(".*");
 			_lck->lock();
-			string nPath = this->path;
+			string nPath;
+
 			for (std::list<string>::iterator it = l.begin(); it != l.end(); it++ ) {
+				nPath = this->path;
 				temp.clear();
 				string novaUrl = *it;
+
 				if(!(boost::regex_search(novaUrl, invalid))){
 					if (!novaUrl.empty()) {
 						if(!(boost::regex_search(novaUrl, absoluto))){
 							temp+= (this->secure ? "https://" : "http://");
 							temp+= this->domain;
+							//temp+= "/";
+							/**/
+							size_t pos;
+							while((pos = novaUrl.find("..")) != std::string::npos) {
+								aux.clear();
+								boost::split_regex(aux, nPath,boost::regex("/"));
+								nPath.clear();
+								for (unsigned i = 0; i < aux.size()-1; i++) {
+									nPath+= aux[i];
+									nPath+= "/";
+								}
+
+								// href="../blablabla/tralala/index.html"
+								//volta na url
+								novaUrl.replace(pos, pos+3,"");
+								//fica "blablabla/tralala/index.html" no final, relativo ao backparent
+							}
+							/**/
+							//url vazia
+							if (novaUrl.size() == 0)
+								continue;
 							if (novaUrl.at(0) == '/') {
 								//novaUrl.replace(novaUrl.begin(), novaUrl.begin()+1,"");
+								// href="/teste/trlala"
+								//url relativa a pagina principal, ignora this->path
 							} else {
-								temp += this->path;
+								/**/
+								if (novaUrl.at(0) == '.') {
+									// href="./self.html"
+									//remove o ./ e adiciona o caminho a variavel temporaria
+									novaUrl.replace(novaUrl.begin(), novaUrl.begin()+2,"");
+								}
+								/**/
+								temp += nPath;
 							}
 							novaUrl = temp + novaUrl;
-							if (!boost::regex_search(novaUrl, arquivo)) {
-								novaUrl+= "/";
-							}
 						}
-						//std::cout << "novaUrl: " << novaUrl << std::endl;
 						urlList.push_back(novaUrl);
 					}
 				}
@@ -294,19 +325,19 @@ int http::ParseData(string reply) {
 string http::GetCertificateOwner() {
 	string retorno;
 	if (secure && this->conexaoSegura != NULL)
-		retorno = this->conexaoSegura->GetCertificateSubString("CN");
+		retorno = this->conexaoSegura->GetCertificateSubject("CN");
 	return retorno;
 }
 string http::GetCertificateOwnerOrganization() {
 	string retorno;
 	if (secure && this->conexaoSegura != NULL)
-		retorno = this->conexaoSegura->GetCertificateSubString("O");
+		retorno = this->conexaoSegura->GetCertificateSubject("O");
 	return retorno;
 }
 bool http::IsSelfSign() {
 	bool retorno = false;
 	if (secure && this->conexaoSegura != NULL)
-		retorno = this->conexaoSegura->GetCertificateSubString("CN") == this->conexaoSegura->GetCertificateSubString("O") ? true : false;
+		retorno = this->conexaoSegura->GetCertificateSubject("O") == this->conexaoSegura->GetCertificateIssuer("O") ? true : false;
 	return retorno;
 }
 bool http::Secure() {

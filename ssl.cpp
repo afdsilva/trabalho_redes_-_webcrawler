@@ -69,6 +69,8 @@ bool SslConnection::Connect(int socket) {
 				} else {
 					X509 * certs = SSL_get_peer_certificate(this->sslHnd);
 					this->issuerCertificate = X509_NAME_oneline(X509_get_issuer_name(certs), 0, 0);
+					this->subjectCertificate = X509_NAME_oneline(X509_get_subject_name(certs), 0, 0);
+
 					free(certs);
 				}
 			}
@@ -154,12 +156,30 @@ string SslConnection::SslReceive() {
 	return retorno;
 }
 
-string SslConnection::GetCertificateSubString(string substring) {
+string SslConnection::GetCertificateIssuer(string substring) {
 	string retorno;
 	if (!this->issuerCertificate.empty()) {
 		vector<string> str_split;
 
 		boost::split_regex(str_split, this->issuerCertificate,boost::regex("/"));
+		std::size_t pos;
+
+		for (unsigned int i = 0; i < str_split.size(); i++) {
+			if ((pos = str_split[i].find(substring)) != std::string::npos) {
+				retorno = str_split[i].substr(substring.length()+1);
+				break;
+			}
+		}
+	}
+	return retorno;
+}
+
+string SslConnection::GetCertificateSubject(string substring) {
+	string retorno;
+	if (!this->subjectCertificate.empty()) {
+		vector<string> str_split;
+
+		boost::split_regex(str_split, this->subjectCertificate,boost::regex("/"));
 		std::size_t pos;
 
 		for (unsigned int i = 0; i < str_split.size(); i++) {
