@@ -45,7 +45,6 @@ bool SslConnection::Connect(int socket) {
 			this->sslCtx = SSL_CTX_new (SSLv23_client_method());
 			if (this->sslCtx == NULL)
 				throw 1;
-			cout << "de gratis:" << this->fileCertificate << this->pathCertificate << endl;
 			if(!SSL_CTX_load_verify_locations(this->sslCtx, (this->fileCertificate.empty() ? NULL : this->fileCertificate.c_str()), (this->pathCertificate.empty() ? NULL : this->pathCertificate.c_str())))
 				std::cerr << "Erro no caminho dos certificados locais" << std::endl;
 
