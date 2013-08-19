@@ -52,7 +52,7 @@ if [ $# = 2 ]; then
 	fi
 fi
 
-if [ $# = 3]; then
+if [ $# = 3 ]; then
 	if [ $argumentos = 0 ]; then
 		./webcrawler $1 $2 $3 > saida.txt
 	fi

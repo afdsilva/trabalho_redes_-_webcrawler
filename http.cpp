@@ -264,43 +264,19 @@ int http::ParseData(string reply) {
 				if(!(boost::regex_search(novaUrl, invalid))){
 					if (!novaUrl.empty()) {
 						if(!(boost::regex_search(novaUrl, absoluto))){
-							int nr = 0;
-							if (novaUrl.at(0) == '.') {
-								nr = 2;
-								if (novaUrl.at(1) == '.') {
-									nr = 3;
-								}
-							} else if (novaUrl.at(0) == '/')
-								nr = 1;
-							if (nr == 3) {
-								aux.clear();
-								boost::split_regex(aux, this->path, boost::regex("/"));
-								nPath.clear();
-								for(int i = 0; i < (int)aux.size()-2; i++){
-									nPath += aux[i];
-									if(i < (int)aux.size()-2){
-										nPath += "/";
-									}
-								}
-							}
-							novaUrl.replace(novaUrl.begin(), novaUrl.begin()+nr,"");
-							temp += (this->secure ? "https://" : "http://");
-							temp += this->domain;
-							if (boost::regex_search(this->path, arquivo)) {
-								aux.clear();
-								boost::split_regex(aux, this->path, boost::regex("/"));
-								for(int i = 0; i < (int)aux.size()-1; i++){
-									temp += aux[i];
-									if(i < (int)aux.size()-1){
-										temp += "/";
-									}
-								}
-							}
-							else{
-								temp += nPath;
+							temp+= (this->secure ? "https://" : "http://");
+							temp+= this->domain;
+							if (novaUrl.at(0) == '/') {
+								//novaUrl.replace(novaUrl.begin(), novaUrl.begin()+1,"");
+							} else {
+								temp += this->path;
 							}
 							novaUrl = temp + novaUrl;
+							if (!boost::regex_search(novaUrl, arquivo)) {
+								novaUrl+= "/";
+							}
 						}
+						//std::cout << "novaUrl: " << novaUrl << std::endl;
 						urlList.push_back(novaUrl);
 					}
 				}
@@ -319,6 +295,12 @@ string http::GetCertificateOwner() {
 	string retorno;
 	if (secure && this->conexaoSegura != NULL)
 		retorno = this->conexaoSegura->GetCertificateSubString("CN");
+	return retorno;
+}
+string http::GetCertificateOwnerOrganization() {
+	string retorno;
+	if (secure && this->conexaoSegura != NULL)
+		retorno = this->conexaoSegura->GetCertificateSubString("O");
 	return retorno;
 }
 bool http::IsSelfSign() {
@@ -352,14 +334,16 @@ void http::Recursive(string url, int depth) {
 		nodo->url = url;
 		nodo->useSsl = m_http.Secure();
 		nodo->CN = m_http.GetCertificateOwner();
+		nodo->O = m_http.GetCertificateOwnerOrganization();
 		nodo->autoassinado = m_http.IsSelfSign();
 		http::urlVisited.push_back(nodo);
-
 		bool found = false;
 		if (depth > 0) {
+			string atual;
 			std::vector<string> urlList = m_http.GetUrlList();
 			for (unsigned int i = 0; i < urlList.size(); i++ ) {
-				string atual = urlList[i];
+				atual = urlList[i];
+				found = false;
 				for (unsigned int k = 0; k < http::urlVisited.size(); k++) {
 					if (http::urlVisited[k]->url == atual) {
 						found = true;

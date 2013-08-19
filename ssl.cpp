@@ -122,6 +122,13 @@ string SslConnection::SslReceive() {
 		int header = 0;
 		char * content = NULL;
 
+		struct timeval tv; /* timeval and timeout stuff added by davekw7x */
+		tv.tv_sec = 3;
+		tv.tv_usec = 0;
+		if (setsockopt(this->socket, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv,  sizeof tv)){
+			//perror("setsockopt");
+			throw 1;
+		}
 		while ((tam = SSL_read(this->sslHnd, buffer, BUFSIZ)) > 0) {
 			retorno += buffer;
 			if (header == 0) {
@@ -136,14 +143,14 @@ string SslConnection::SslReceive() {
 				content = buffer;
 				//puts(content);
 			}
+			//if (tam < 1024)
+			//	break;
 
 			//saida.write(content,tam-ponteiro);
 
 			memset(buffer,0,tam);
-
 		}
 	}
-
 	return retorno;
 }
 

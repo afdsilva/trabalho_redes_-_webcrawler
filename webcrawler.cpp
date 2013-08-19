@@ -23,8 +23,6 @@ int main(int argc , char *argv[]) {
 		std::cerr << "parametros invalidos" << std::endl;
 		break;
 	}
-	std::cout << http::certificateFile << std::endl;
-	std::cout << http::certificatePath << std::endl;
 	// Inserindo http, caso seja informada uma url sem http
 	boost::regex teste("http|https");
 	if(!(boost::regex_search(argv[1], teste))){
@@ -41,8 +39,10 @@ int main(int argc , char *argv[]) {
 	for (unsigned int i = 0; i < http::urlVisited.size();i++) {
 		UrlNodo * nodo = http::urlVisited[i];
 		std::cout << nodo->url << std::endl ;
-		if (nodo->useSsl)
+		if (nodo->useSsl) {
 			std::cout << "		Dono: " << nodo->CN << (nodo->autoassinado ? " AUTOASSINADO" : "") << std::endl;
+			std::cout << "		Organização: " << nodo->O << std::endl;
+		}
 	}
 
 	/**/

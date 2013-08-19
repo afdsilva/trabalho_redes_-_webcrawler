@@ -7,15 +7,40 @@ Lucio Bastos - CComp
 Repositorio GIT: https://github.com/andresilvaprogramador/trabalho_redes_-_webcrawler.git
 Branch: ssl
 Implementação:
-
+	Foi refeita a implementação recursiva para usar a classe, deixando o codigo mais legível e removendo codigo a mais;
+	A implementação de Threads funciona, mas exigiria pensar numa forma de como usaria uma lista de dados unicas enquando as threads acessam
+	e preenchem essa lista, por falta de tempo foi preferivel simplificar, apesar de usar threads, usa apenas 1 thread.
+	Sobre o erro no outro trabalho não foi detectado, foram feitos exaustivos testes mas não se constatou onde estaria o problema na pthreads.
+	A classe ssl é independente e requer apenas o socket;
+	Foi removido o suporte ao download de arquivos, foi notado que existem uma infinidade de casos para url, ficou
+	muito complicado tratar a URL e decidir qual o nome de arquivo, em muitos casos nem nome de arquivo existia, 
+	portanto para simplificar o projeto e acelerar o processo foi decidido desabilitar esse recurso;
+	A recursão foi otimizada para adicionar a lista de visitados apenas endereços que foram acessados;
+	Conexões seguras são feitas quando a url contem "https", do contrario é feita uma conexão normal
 
 Instruções:
 	o script testeme possui instrucoes de uso:
-		./testeme.sh <url> <profundidade>
+		./testeme <url> <profundidade> --CAfile=<caminho/para/arquivo/certificado>
+		./testeme <url> <profundidade> --CApath=<caminho/para/pasta/certificados>
+		
+		NOTA: CAfile e CApath nao podem ser usados simultaneamente, apenas testes com CApath foram realizados
+		caso o certificado seja inválido ou o caminho esteja incorreto o programa exibe a mensagem a cada conexão
+		quando o certificado é auto-assinado aparece um texto indicativo, em caixa alta na lista de endereços ao lado do Dono
 		
 	alem de outros argumentos para facilitar a compilacao e instalacao de bibliotecas necessarias
       -h : chama ajuda
       -c : compila binario
-      -i : instala bibliotecas necessarias para compilacao
+      -i : instala bibliotecas necessarias para compilacao (boost_regex, libssl-dev)
       
 Testes:
+	Foram feitos testes nos seguintes sites:
+	
+	https://sites.google.com/a/inf.ufpel.edu.br/pilla/home/redes-de-computadores
+	https://www.google.com/
+	https://www.openssl.org/
+	
+	e respectivos sites em conexão normal não-segura
+	
+	Após resolver vários problemas particulares, de cada página obteve-se uma experiência satisfatória, foi possivel
+	da mesma forma que no trabalho anterior obter os links, e listar as páginas acessadas, com o adendo de conexões
+	seguras retornarem com o nome do Dono (CN) e da organização (O);

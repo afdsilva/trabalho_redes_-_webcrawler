@@ -30,6 +30,7 @@ class UrlNodo {
 public:
 	string url;
 	string CN;
+	string O;
 	bool autoassinado;
 	bool useSsl;
 
@@ -76,6 +77,7 @@ public:
 	std::vector<string> GetUrlList();
 
 	string GetCertificateOwner();
+	string GetCertificateOwnerOrganization();
 	bool IsSelfSign();
 	bool Secure();
 	bool IsValid();

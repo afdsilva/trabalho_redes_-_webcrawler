@@ -9,7 +9,7 @@ OBJETOS=http.o ssl.o Thread.o webcrawler.o
 # Compilador flags - Warning, debug, boost
 CPPFLAGS=-std=c++0x -Wall -g
 
-LDFLAGS=-lm -lboost_regex -lssl
+LDFLAGS=-lm -lboost_regex -lssl -lcrypto
 EXECUTAVEL=webcrawler
 BASE_FILENAME=trabalho_redes_-_webcrawler
 
